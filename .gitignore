@@ -1,0 +1,22 @@
+# Node modules
+node_modules/
+
+# Env files (VERY IMPORTANT)
+.env
+.env.local
+.env.*
+
+# Logs
+logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build folders
+dist/
+build/
+
+# Uploads (optional - since you store files)
+backend/uploads/
