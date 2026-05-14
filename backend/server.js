@@ -1,131 +1,202 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import cookieParser from "cookie-parser";
+import path from "path";
+import { fileURLToPath } from "url";
+import fs from "fs";
 import sqlite3 from "sqlite3";
 import { open } from "sqlite";
-import scoresRouter from "./routes/scores.js";
 import bcrypt from "bcryptjs";
+
+// Load environment variables
+dotenv.config();
+
+// Route imports
+import authRouter from "./routes/auth.js";
+import scoresRouter from "./routes/scores.js";
 import attendanceRouter from "./routes/attendance.js";
 import examsRouter from "./routes/exams.js";
 import announcementsRouter from "./routes/announcements.js";
-import authRouter from "./routes/auth.js";
 import aiRouter from "./routes/ai.js";
 
-dotenv.config();
+// Middleware imports
+import { requireAuthCookie } from "./middleware/requireAuthCookie.js";
+import { requireRole } from "./middleware/requireRole.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-
-// Initialize SQLite Database
+// Initialize database
 export let db;
-async function initDb() {
+
+// Add this near the top of your server.js
+const originalConsoleWarn = console.warn;
+console.warn = function (...args) {
+  const message = args.join(" ");
+  // Filter out pdf2json warnings
+  if (
+    message.includes("Warning: Setting up fake worker") ||
+    message.includes("Warning: TODO: graphic state operator") ||
+    message.includes("Warning: Found Type3 font") ||
+    message.includes("Warning: Unsupported: field.type")
+  ) {
+    return;
+  }
+  originalConsoleWarn.apply(console, args);
+};
+
+async function initDB() {
   db = await open({
-    filename: "./db/database.sqlite",
+    filename: "./school.db",
     driver: sqlite3.Database,
   });
+
+  // Create tables if they don't exist
   await db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT UNIQUE,
+      password TEXT,
+      role TEXT,
+      fullName TEXT,
+      studentId TEXT UNIQUE,
+      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE TABLE IF NOT EXISTS scores (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      studentId TEXT NOT NULL,
-      studentName TEXT NOT NULL,
-      assessment TEXT NOT NULL,
-      score INTEGER NOT NULL,
-      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+      studentId TEXT,
+      subject TEXT,
+      score INTEGER,
+      examType TEXT,
+      date DATE,
+      FOREIGN KEY(studentId) REFERENCES users(studentId)
     );
 
-    -- Attendance table
     CREATE TABLE IF NOT EXISTS attendance (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      studentId TEXT NOT NULL,
-      studentName TEXT NOT NULL,
-      date DATE NOT NULL,
-      status TEXT CHECK(status IN ('present', 'absent', 'late')),
+      studentId TEXT,
+      date DATE,
+      status TEXT,
       class TEXT,
-      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+      FOREIGN KEY(studentId) REFERENCES users(studentId)
     );
 
-    -- Exams table
     CREATE TABLE IF NOT EXISTS exams (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT NOT NULL,
+      title TEXT,
       description TEXT,
-      duration INTEGER NOT NULL,
-      startTime DATETIME,
-      endTime DATETIME,
-      questions TEXT NOT NULL,
+      subject TEXT,
+      questions TEXT,
+      startTime TEXT,
+      endTime TEXT,
+      duration INTEGER,
       createdBy TEXT,
-      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-
-    -- Exam attempts
-    CREATE TABLE IF NOT EXISTS exam_attempts (
+      date DATETIME DEFAULT CURRENT_TIMESTAMP
+   );
+   CREATE TABLE IF NOT EXISTS exam_attempts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      examId INTEGER NOT NULL,
-      studentId TEXT NOT NULL,
-      studentName TEXT NOT NULL,
+      examId INTEGER,
+      studentId TEXT,
+      studentName TEXT,
       answers TEXT,
       score INTEGER,
+      totalQuestions INTEGER,
+      percentage REAL,
       submittedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY(examId) REFERENCES exams(id)
     );
 
-    -- Announcements table
     CREATE TABLE IF NOT EXISTS announcements (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT NOT NULL,
-      content TEXT NOT NULL,
-      targetClass TEXT DEFAULT 'all',
-      author TEXT,
-      pinned BOOLEAN DEFAULT 0,
-      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-
-    -- Users table
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT UNIQUE NOT NULL,
-      password TEXT NOT NULL,
-      role TEXT CHECK(role IN ('admin', 'teacher', 'student')),
-      fullName TEXT,
-      studentId TEXT UNIQUE
+      title TEXT,
+      content TEXT,
+      date DATE,
+      createdBy TEXT
     );
   `);
 
-  // Insert default admin if none exists
-  const admin = await db.get("SELECT * FROM users WHERE username = ?", [
-    "admin",
-  ]);
-  if (!admin) {
-    // const bcrypt = await import("bcryptjs");
-    // const hashedPassword = await bcrypt.hash("admin123", 10);
+  // Insert sample admin if not exists
+  const adminExists = await db.get(
+    "SELECT * FROM users WHERE username = 'admin'",
+  );
+  if (!adminExists) {
+    // bcrypt is already imported at the top
     const hashedPassword = await bcrypt.hash("admin123", 10);
     await db.run(
       "INSERT INTO users (username, password, role, fullName) VALUES (?, ?, ?, ?)",
-      ["admin", hashedPassword, "admin", "School Administrator"],
+      ["admin", hashedPassword, "admin", "System Administrator"],
     );
-    console.log("✅ Default admin created: username=admin, password=admin123");
+    console.log(
+      "✅ Created default admin user (username: admin, password: admin123)",
+    );
+  } else {
+    console.log("✅ Database already has admin user");
   }
-
-  console.log("✅ Database initialized with all tables");
-  console.log("✅ SQLite database ready");
 }
-await initDb();
+
+// Middleware
+app.use(
+  cors({
+    origin: "http://localhost:5173", // Your Vite frontend URL
+    credentials: true, // Required for cookies
+  }),
+);
+app.use(express.json());
+app.use(cookieParser());
+
+// Create uploads directory if needed
+const uploadDir = process.env.UPLOAD_DIR || "uploads";
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir);
+  console.log(`📁 Created uploads directory: ${uploadDir}`);
+}
 
 // Routes
-app.use("/api/scores", scoresRouter);
-app.use("/api/attendance", attendanceRouter);
-app.use("/api/exams", examsRouter);
-app.use("/api/announcements", announcementsRouter);
 app.use("/api/auth", authRouter);
-app.use("/api/ai", aiRouter);
+app.use("/api/scores", requireAuthCookie, scoresRouter);
+app.use("/api/attendance", requireAuthCookie, attendanceRouter);
+app.use("/api/exams", requireAuthCookie, examsRouter);
+app.use(
+  "/api/announcements",
+  requireAuthCookie,
+  requireRole(["teacher", "admin"]),
+  announcementsRouter,
+);
+app.use(
+  "/api/ai",
+  requireAuthCookie,
+  requireRole(["teacher", "admin"]),
+  aiRouter,
+);
 
-app.get("/", (req, res) => {
-  res.json({ message: "EduTrack Ultimate API is running" });
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error("❌ Error:", err.stack);
+  res.status(500).json({ error: "Something went wrong!" });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-});
+// Start server
+async function startServer() {
+  try {
+    await initDB();
+    app.listen(PORT, () => {
+      console.log(`\n🚀 Server running on http://localhost:${PORT}`);
+      console.log(`📁 Environment: ${process.env.NODE_ENV || "development"}`);
+      console.log(`🍪 Cookie authentication: ENABLED`);
+      console.log(
+        `🤖 Gemini AI: ${process.env.GEMINI_API_KEY ? "✅ Configured" : "❌ Not configured"}`,
+      );
+      console.log(`\n📝 Default login: admin / admin123\n`);
+    });
+  } catch (error) {
+    console.error("❌ Failed to start server:", error);
+    process.exit(1);
+  }
+}
+
+startServer();

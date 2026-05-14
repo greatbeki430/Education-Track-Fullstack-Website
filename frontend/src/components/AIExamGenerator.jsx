@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
 import api from "../api";
+import InfoModal from "./common/InfoModal";
 import "./AIExamGenerator.css";
 
 export default function AIExamGenerator({ onQuestionsGenerated, onClose }) {
@@ -21,6 +22,8 @@ export default function AIExamGenerator({ onQuestionsGenerated, onClose }) {
   const [rejectedQuestions, setRejectedQuestions] = useState([]);
   const [sessionId, setSessionId] = useState(null);
   const [error, setError] = useState("");
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const [infoModalConfig, setInfoModalConfig] = useState({});
 
   const fileInputRef = useRef(null);
 
@@ -105,24 +108,25 @@ export default function AIExamGenerator({ onQuestionsGenerated, onClose }) {
     formData.append("customInstructions", config.customInstructions);
 
     try {
-      let response;
-      try {
-        response = await api.post("/ai/generate-from-file", formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-      } catch (err) {
-        console.log("Using mock AI");
-        response = await api.post("/ai/generate-from-file-mock", formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-      }
+      // FIXED: Use full path /api/ai/generate-from-file
+      const response = await api.post("/api/ai/generate-from-file", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
       setGeneratedQuestions(response.data.questions);
       setSessionId(response.data.sessionId);
       setStep(2);
       setCurrentQuestionIndex(0);
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to generate questions");
+      console.error("Generation error:", err);
+      setInfoModalConfig({
+        type: "error",
+        title: "Generation Failed",
+        message:
+          err.response?.data?.error ||
+          "Failed to generate questions. Please try again.",
+      });
+      setShowInfoModal(true);
     } finally {
       setLoading(false);
     }
@@ -143,24 +147,25 @@ export default function AIExamGenerator({ onQuestionsGenerated, onClose }) {
 
     // Save to rejected bank
     try {
-      await api.post("/ai/save-rejected", {
+      // FIXED: Use full path /api/ai/save-rejected
+      await api.post("/api/ai/save-rejected", {
         question: currentQuestion,
         reason: "Rejected by teacher during review",
-        sourceContent: currentQuestion.sourceContent,
-        topic: config.topic || "General",
+        sourceContent: currentQuestion.sourceContext,
+        topic: currentQuestion.topic || "General",
         gradeLevel: config.gradeLevel,
       });
     } catch (err) {
-      console.error("Failed to save rejected question");
+      console.error("Failed to save rejected question", err);
     }
 
     setLoading(true);
 
     try {
-      // Request a replacement question from AI
-      const response = await api.post("/ai/generate-replacement", {
+      // FIXED: Use full path /api/ai/generate-replacement
+      const response = await api.post("/api/ai/generate-replacement", {
         originalQuestion: currentQuestion,
-        sourceContent: currentQuestion.sourceContent,
+        sourceContent: currentQuestion.sourceContext,
         customInstructions: config.customInstructions,
         gradeLevel: config.gradeLevel,
         difficulty: config.difficulty,
@@ -503,6 +508,11 @@ export default function AIExamGenerator({ onQuestionsGenerated, onClose }) {
           </div>
         )}
       </div>
+      <InfoModal
+        isOpen={showInfoModal}
+        onClose={() => setShowInfoModal(false)}
+        {...infoModalConfig}
+      />
     </div>
   );
 }

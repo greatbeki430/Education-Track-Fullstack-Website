@@ -4,45 +4,36 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
-const pdfParse = require("pdf-parse");
-// FIXED: Proper ES module import for pdf-parse
-// import pdfParse from "pdf-parse";
-// FIXED: Dynamic import for pdf-parse (works with CommonJS modules)
-// let pdfParse;
-// (async () => {
-//   try {
-//     const pdfParseModule = await import("pdf-parse");
-//     pdfParse = pdfParseModule.default;
-//     console.log("✅ pdf-parse loaded successfully");
-//   } catch (err) {
-//     console.log("⚠️ pdf-parse not available, PDF support limited");
-//   }
-// })();
-// const pdfParseModule = await import("pdf-parse");
-
-// pdfParse = pdfParseModule.default || pdfParseModule;
 import mammoth from "mammoth";
+import { extractTextFromFile, getFileInfo } from "../services/fileExtractor.js";
 
-// Get __dirname equivalent in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
 const router = express.Router();
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+// Adaptive rate limiting variables
+let globalRequestCount = 0;
+let globalLastReset = Date.now();
+let currentMaxChars = 12000; // Start with 12,000 chars
+let consecutiveRateLimits = 0;
+let lastReductionTime = Date.now();
 
-// Configure multer for file uploads
+// Gemini API URL
+const GEMINI_URL = () =>
+  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_API_KEY}`;
+
+// ─── Multer Setup ─────────────────────────────────────────────────────────────
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = path.join(
       __dirname,
       "../" + (process.env.UPLOAD_DIR || "uploads"),
     );
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
+    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
@@ -53,626 +44,310 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({
-  storage: storage,
+  storage,
   limits: { fileSize: parseInt(process.env.MAX_FILE_SIZE) || 50 * 1024 * 1024 },
-  //fileSize: 50 * 1024 * 1024  // INCREASED to 50MB (from 10MB)
-  // fileSize: 10 * 1024 * 1024
-
   fileFilter: (req, file, cb) => {
-    const allowedTypes = [".pdf", ".docx", ".txt"];
+    const allowed = [".pdf", ".docx", ".txt"];
     const ext = path.extname(file.originalname).toLowerCase();
-    if (allowedTypes.includes(ext)) {
-      cb(null, true);
-    } else {
-      cb(
-        new Error(
-          "Invalid file type. Only PDF, DOCX, and TXT files are allowed.",
-        ),
-      );
-    }
+    if (allowed.includes(ext)) return cb(null, true);
+    cb(
+      new Error(
+        "Invalid file type. Only PDF, DOCX, and TXT files are allowed.",
+      ),
+    );
   },
 });
 
-// Extract text from uploaded file - PROPERLY IMPLEMENTED
-async function extractTextFromFile(filePath, originalName) {
-  const ext = path.extname(originalName).toLowerCase();
-  console.log(`📄 Extracting text from: ${originalName} (${ext})`);
+// ─── Text Extraction ──────────────────────────────────────────────────────────
 
-  try {
-    if (ext === ".pdf") {
-      // PROPER PDF PARSING - WORKS CORRECTLY
-      const dataBuffer = fs.readFileSync(filePath);
-      const pdfData = await pdfParse(dataBuffer);
-      console.log(
-        `✅ PDF parsed: ${pdfData.numpages} pages, ${pdfData.text.length} characters`,
-      );
-      return pdfData.text;
-    } else if (ext === ".docx") {
-      // Word document parsing
-      const dataBuffer = fs.readFileSync(filePath);
-      const result = await mammoth.extractRawText({ buffer: dataBuffer });
-      console.log(`✅ DOCX parsed: ${result.value.length} characters`);
-      return result.value;
-    } else if (ext === ".txt") {
-      // Plain text file
-      const text = fs.readFileSync(filePath, "utf8");
-      console.log(`✅ TXT read: ${text.length} characters`);
-      return text;
-    } else {
-      throw new Error(
-        `Unsupported file format: ${ext}. Please upload PDF, DOCX, or TXT files.`,
-      );
-    }
-  } catch (error) {
-    console.error("❌ Text extraction error:", error);
-    throw new Error(`Failed to extract text: ${error.message}`);
+// async function extractTextFromFile(filePath, originalName) {
+//   const ext = path.extname(originalName).toLowerCase();
+//   console.log(`📄 Extracting text from: ${originalName} (${ext})`);
+
+//   try {
+//     if (ext === ".pdf") {
+//       // PDF support is temporarily disabled
+//       throw new Error(
+//         "📄 PDF support is currently being configured.\n\n" +
+//           "Please convert your PDF to TXT format:\n" +
+//           "1. Open the PDF file\n" +
+//           "2. Select all text (Ctrl+A)\n" +
+//           "3. Copy the text (Ctrl+C)\n" +
+//           "4. Paste into a new text file\n" +
+//           "5. Save as .txt file\n" +
+//           "6. Upload the TXT file instead\n\n" +
+//           "You can also use DOCX (Word) files - they work perfectly!",
+//       );
+//     } else if (ext === ".docx") {
+//       const dataBuffer = fs.readFileSync(filePath);
+//       const result = await mammoth.extractRawText({ buffer: dataBuffer });
+//       console.log(`✅ DOCX parsed: ${result.value.length} chars`);
+//       return result.value;
+//     } else if (ext === ".txt") {
+//       const text = fs.readFileSync(filePath, "utf8");
+//       console.log(`✅ TXT read: ${text.length} chars`);
+//       return text;
+//     } else {
+//       throw new Error(`Unsupported file format: ${ext}`);
+//     }
+//   } catch (error) {
+//     console.error("❌ Text extraction error:", error);
+//     throw new Error(`Failed to extract text: ${error.message}`);
+//   }
+// }
+
+// ─── Gemini API Helper ────────────────────────────────────────────────────────
+
+async function callGemini(prompt, maxOutputTokens = 4096) {
+  // Rate limiting check
+  if (Date.now() - globalLastReset > 60000) {
+    globalRequestCount = 0;
+    globalLastReset = Date.now();
   }
+
+  if (globalRequestCount >= 50) {
+    console.log("⏳ Rate limit approaching, waiting 5 seconds...");
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+  }
+  globalRequestCount++;
+  if (!GEMINI_API_KEY) {
+    throw new Error(
+      "GEMINI_API_KEY is not set in .env. Please add it and restart the server.",
+    );
+  }
+
+  const requestBody = {
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: {
+      temperature: 0.7,
+      maxOutputTokens: maxOutputTokens,
+      responseMimeType: "application/json", // Keep this for v1beta
+    },
+  };
+
+  console.log(`🤖 Calling Gemini API...`);
+
+  const response = await fetch(GEMINI_URL(), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(requestBody),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => ({}));
+    const msg =
+      errorBody?.error?.message || `Gemini API error ${response.status}`;
+    console.error("❌ Gemini API error:", msg);
+    throw new Error(`Gemini API error: ${msg}`);
+  }
+
+  const data = await response.json();
+
+  const finishReason = data?.candidates?.[0]?.finishReason;
+  if (finishReason === "SAFETY") {
+    throw new Error(
+      "Gemini blocked this request for safety reasons. Try rephrasing your topic or instructions.",
+    );
+  }
+
+  const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+  if (!rawText) {
+    throw new Error("Gemini returned an empty response. Please try again.");
+  }
+
+  // Clean up markdown formatting
+  let cleanedText = rawText;
+  cleanedText = cleanedText.replace(/^```(?:json)?\s*/i, "");
+  cleanedText = cleanedText.replace(/\s*```$/i, "");
+
+  // Try to extract JSON if there's extra text
+  const jsonMatch = cleanedText.match(/\[[\s\S]*\]/);
+  if (jsonMatch) {
+    cleanedText = jsonMatch[0];
+  }
+
+  return cleanedText.trim();
 }
 
-// Generate intelligent questions from content
-// Generate REAL educational questions from content
-// Generate NATURAL exam questions (no "according to the document" references)
-function generateQuestionsFromContent(
+// ─── Question Generator ───────────────────────────────────────────────────────
+
+async function generateQuestionsWithGemini({
   content,
+  topic,
   numQuestions,
   gradeLevel,
   difficulty,
   questionTypes,
   customInstructions,
-) {
-  const questions = [];
+}) {
+  const MAX_CONTENT_CHARS = 12000;
+  const trimmedContent = content
+    ? content.replace(/\s+/g, " ").trim().slice(0, MAX_CONTENT_CHARS)
+    : null;
 
-  // Step 1: Clean and prepare the content
-  let cleanContent = content.replace(/\s+/g, " ").trim();
+  const sourceDescription = trimmedContent
+    ? `The following is the source material extracted from the uploaded document:\n\n"""\n${trimmedContent}\n"""`
+    : `Generate questions about the topic: "${topic}"`;
 
-  // Step 2: Extract meaningful sentences
-  const sentences = cleanContent
-    .split(/[.!?]+/)
-    .filter((s) => {
-      const trimmed = s.trim();
-      return (
-        trimmed.length > 30 &&
-        trimmed.length < 300 &&
-        !trimmed.startsWith("http") &&
-        trimmed.split(" ").length > 5
-      );
-    })
-    .map((s) => s.trim());
+  const typeInstructions = [];
+  if (questionTypes.includes("multiple-choice"))
+    typeInstructions.push("multiple-choice questions (4 options, one correct)");
+  if (questionTypes.includes("true-false"))
+    typeInstructions.push("true/false questions");
+  const typeLine =
+    typeInstructions.length > 0
+      ? `Question types to include: ${typeInstructions.join(" and ")}.`
+      : "Use a mix of multiple-choice and true/false questions.";
 
-  // Step 3: Extract key concepts (nouns and important phrases)
-  const words = cleanContent.toLowerCase().split(/\s+/);
-  const commonWords = new Set([
-    "the",
-    "a",
-    "an",
-    "and",
-    "of",
-    "to",
-    "in",
-    "for",
-    "on",
-    "with",
-    "by",
-    "at",
-    "from",
-    "is",
-    "are",
-    "was",
-    "were",
-    "be",
-    "been",
-    "being",
-    "have",
-    "has",
-    "had",
-    "having",
-    "do",
-    "does",
-    "did",
-    "doing",
-    "but",
-    "or",
-    "so",
-    "for",
-    "nor",
-    "yet",
-    "this",
-    "that",
-    "these",
-    "those",
-    "it",
-    "they",
-    "we",
-    "you",
-    "he",
-    "she",
-    "them",
-    "their",
-    "its",
-    "can",
-    "will",
-    "would",
-    "could",
-    "should",
-    "may",
-    "might",
-    "must",
-    "such",
-    "which",
-    "what",
-    "when",
-    "where",
-    "who",
-    "whom",
-    "whose",
-    "why",
-    "how",
-    "there",
-    "their",
-    "were",
-    "been",
-    "into",
-    "through",
-    "during",
-    "before",
-    "after",
-    "above",
-    "below",
-    "between",
-    "under",
-    "over",
-    "again",
-    "further",
-    "then",
-    "once",
-    "here",
-    "there",
-    "all",
-    "any",
-    "both",
-    "each",
-    "few",
-    "more",
-    "most",
-    "other",
-    "some",
-    "such",
-    "no",
-    "nor",
-    "not",
-    "only",
-    "own",
-    "same",
-    "than",
-    "than",
-    "then",
-    "these",
-    "those",
-    "too",
-    "very",
-    "just",
-    "but",
-    "do",
-    "does",
-    "did",
-    "doing",
-    "down",
-    "only",
-    "own",
-  ]);
+  const customLine = customInstructions
+    ? `Additional instructions from the teacher: ${customInstructions}`
+    : "";
 
-  // Count word frequency for key concepts
-  const wordFrequency = {};
-  for (const word of words) {
-    if (word.length > 4 && !commonWords.has(word) && !word.match(/^\d+$/)) {
-      wordFrequency[word] = (wordFrequency[word] || 0) + 1;
-    }
+  const prompt = `You are an expert educational assessment creator for Grade ${gradeLevel} students.
+Your task is to generate exactly ${numQuestions} exam questions at ${difficulty} difficulty.
+
+QUESTION VARIETY REQUIREMENTS:
+- Create a mix of easy, medium, and hard questions
+- Include questions that test understanding, not just memorization
+- Add scenario-based questions where applicable
+- Use real-world examples to make questions engaging
+
+${typeLine}
+${customLine}
+
+${sourceDescription}
+
+STRICT OUTPUT RULES:
+- Respond ONLY with a valid JSON array. No markdown, no backticks, no explanation.
+- Each element must be an object with EXACTLY these keys:
+  {
+    "text": "Full question text (do NOT number it)",
+    "type": "multiple-choice" or "true-false",
+    "options": ["option A text", "option B text", "option C text", "option D text"],
+    "correctAnswer": "exact text of the correct option",
+    "points": 1,
+    "explanation": "brief explanation of why the answer is correct"
+  }
+- CRITICAL: When mentioning HTML tags, write them as plain text like 'html' or 'div', not as actual HTML or with angle brackets that might be stripped.
+- For true-false: options must be exactly ["True", "False"] and correctAnswer must be "True" or "False".
+- For multiple-choice: options must be an array of exactly 4 non-empty strings.
+- correctAnswer must be the EXACT full text of one of the options (NOT a letter like "A").
+- Do NOT reference "the document", "the text", or "the passage" — ask naturally as if from knowledge.
+- Questions must be clearly worded, educationally valid, and appropriate for Grade ${gradeLevel}.
+- Ensure questions are diverse and cover different aspects of the material.
+- Double-check that all code references, tag names, and technical terms are complete and clearly visible.
+
+Generate ${numQuestions} questions now. Output ONLY the JSON array.`;
+
+  console.log(
+    `🤖 Calling Gemini for ${numQuestions} questions (${difficulty}, Grade ${gradeLevel})…`,
+  );
+
+  const jsonText = await callGemini(prompt, 4096);
+
+  let questions;
+  try {
+    questions = JSON.parse(jsonText);
+  } catch {
+    console.error("❌ Failed to parse Gemini response as JSON:\n", jsonText);
+    throw new Error("Gemini returned malformed JSON. Please try again.");
   }
 
-  // Get top keywords
-  let keywords = Object.entries(wordFrequency)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 20)
-    .map((entry) => entry[0]);
-
-  // If no good keywords, extract important phrases
-  if (keywords.length < 3) {
-    const phrases = cleanContent.match(/[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*/g) || [];
-    keywords = [...new Set(phrases)].slice(0, 15);
+  if (!Array.isArray(questions) || questions.length === 0) {
+    throw new Error(
+      "Gemini returned an unexpected structure. Please try again.",
+    );
   }
 
-  // Still no keywords? Use generic terms
-  if (keywords.length < 3) {
-    keywords = [
-      "the main concept",
-      "key principle",
-      "important idea",
-      "central theme",
-      "main argument",
-    ];
-  }
+  const sanitised = questions.slice(0, numQuestions).map((q, i) => ({
+    id: Date.now() + i,
+    text: `${i + 1}. ${String(q.text || "").trim()}`,
+    type: q.type === "true-false" ? "true-false" : "multiple-choice",
+    options: Array.isArray(q.options) ? q.options : ["True", "False"],
+    correctAnswer: String(q.correctAnswer || "").trim(),
+    points: Number(q.points) || 1,
+    explanation: String(q.explanation || "").trim(),
+    topic: topic || "Document",
+  }));
 
-  console.log(`📚 Extracted keywords: ${keywords.slice(0, 5).join(", ")}...`);
-
-  // Question templates - NATURAL, no document references
-  const questionTemplates = {
-    definition: [
-      "What is {keyword}?",
-      "Define {keyword}.",
-      'What does the term "{keyword}" mean?',
-      "Explain the concept of {keyword}.",
-      'What is meant by "{keyword}"?',
-    ],
-    explanation: [
-      "Explain {keyword} in your own words.",
-      "What is the purpose of {keyword}?",
-      "How does {keyword} work?",
-      "Describe the function of {keyword}.",
-      "What are the key characteristics of {keyword}?",
-    ],
-    example: [
-      "Give an example of {keyword}.",
-      "Which of the following is an example of {keyword}?",
-      "Identify a real-world application of {keyword}.",
-      "What situation best illustrates {keyword}?",
-    ],
-    comparison: [
-      "What is the difference between {keyword1} and {keyword2}?",
-      "How are {keyword1} and {keyword2} related?",
-      "Compare {keyword1} with {keyword2}.",
-      "What distinguishes {keyword1} from {keyword2}?",
-    ],
-    application: [
-      "When would you use {keyword}?",
-      "What is the practical application of {keyword}?",
-      "How can {keyword} be applied?",
-      "In what scenario is {keyword} most useful?",
-    ],
-    importance: [
-      "Why is {keyword} important?",
-      "What is the significance of {keyword}?",
-      "What role does {keyword} play?",
-      "Why should we understand {keyword}?",
-    ],
-    truefalse: [
-      "{statement}",
-      "Is it true that {statement}?",
-      "True or False: {statement}",
-    ],
-  };
-
-  // Difficulty-based complexity
-  const difficultyModifiers = {
-    easy: { prefix: "", suffix: "" },
-    medium: { prefix: "Explain in detail: ", suffix: " Provide reasoning." },
-    hard: {
-      prefix: "Analyze and evaluate: ",
-      suffix: " Justify your answer with specific reasoning.",
-    },
-  };
-
-  for (let i = 0; i < numQuestions; i++) {
-    // Select a meaningful source sentence for context
-    let sourceSentence = "";
-    if (sentences.length > 0) {
-      sourceSentence = sentences[i % sentences.length];
-    } else {
-      sourceSentence = cleanContent.substring(
-        i * 150,
-        Math.min((i + 1) * 150, cleanContent.length),
-      );
-    }
-
-    // Pick keywords for this question
-    const keyword = keywords[i % keywords.length];
-    const keyword2 = keywords[(i + 1) % keywords.length];
-
-    // Determine question type based on user preference
-    const templateTypes = [];
-    if (questionTypes.includes("true-false")) templateTypes.push("truefalse");
-    if (questionTypes.includes("multiple-choice")) {
-      templateTypes.push(
-        "definition",
-        "explanation",
-        "example",
-        "comparison",
-        "application",
-        "importance",
-      );
-    }
-
-    const selectedType =
-      templateTypes.length > 0
-        ? templateTypes[i % templateTypes.length]
-        : "definition";
-
-    // Generate NATURAL question text
-    let questionText = "";
-    let options = [];
-    let correctAnswer = "";
-    let explanation = "";
-
-    if (selectedType === "truefalse") {
-      // Create True/False question
-      const statement =
-        sourceSentence.length > 80
-          ? sourceSentence.substring(0, 80) + "..."
-          : sourceSentence;
-      const isTrue = i % 2 === 0;
-
-      const template =
-        questionTemplates.truefalse[i % questionTemplates.truefalse.length];
-      questionText = template.replace("{statement}", statement);
-
-      options = ["True", "False"];
-      correctAnswer = isTrue ? "True" : "False";
-      explanation = `Based on the course material: ${sourceSentence.substring(0, 150)}`;
-    } else if (selectedType === "definition") {
-      const template =
-        questionTemplates.definition[i % questionTemplates.definition.length];
-      questionText = template.replace(
-        "{keyword}",
-        keyword.charAt(0).toUpperCase() + keyword.slice(1),
-      );
-
-      // Generate plausible options
-      const correctDef =
-        sourceSentence.length > 80
-          ? sourceSentence.substring(0, 80) + "..."
-          : sourceSentence;
-
-      options = [
-        correctDef,
-        `A different concept that is often confused with ${keyword}`,
-        `An unrelated term from another field of study`,
-        `The opposite meaning of ${keyword}`,
-      ];
-      correctAnswer = options[0];
-      explanation = `Definition from the material: "${sourceSentence.substring(0, 150)}"`;
-    } else if (selectedType === "explanation") {
-      const template =
-        questionTemplates.explanation[i % questionTemplates.explanation.length];
-      questionText = template.replace(
-        "{keyword}",
-        keyword.charAt(0).toUpperCase() + keyword.slice(1),
-      );
-
-      const correctExp =
-        sourceSentence.length > 80
-          ? sourceSentence.substring(0, 80) + "..."
-          : sourceSentence;
-
-      options = [
-        correctExp,
-        `A superficial description that misses key details`,
-        `An incorrect interpretation of ${keyword}`,
-        `A related but different concept`,
-      ];
-      correctAnswer = options[0];
-      explanation = `The material explains: "${sourceSentence.substring(0, 150)}"`;
-    } else if (selectedType === "example") {
-      const template =
-        questionTemplates.example[i % questionTemplates.example.length];
-      questionText = template.replace(
-        "{keyword}",
-        keyword.charAt(0).toUpperCase() + keyword.slice(1),
-      );
-
-      // Extract potential examples from content
-      const exampleSentences = sentences.filter(
-        (s) =>
-          s.toLowerCase().includes("example") ||
-          s.toLowerCase().includes("for instance") ||
-          s.toLowerCase().includes("such as"),
-      );
-
-      const realExample =
-        exampleSentences.length > 0
-          ? exampleSentences[0].substring(0, 80)
-          : `A practical application of ${keyword} in real-world scenarios`;
-
-      options = [
-        realExample,
-        `An unrelated example from a different topic`,
-        `A theoretical possibility with no practical application`,
-        `A common misconception about ${keyword}`,
-      ];
-      correctAnswer = options[0];
-      explanation = `Example from the material: "${(exampleSentences[0] || sourceSentence).substring(0, 150)}"`;
-    } else if (selectedType === "comparison") {
-      const template =
-        questionTemplates.comparison[i % questionTemplates.comparison.length];
-      questionText = template
-        .replace(
-          "{keyword1}",
-          keyword.charAt(0).toUpperCase() + keyword.slice(1),
-        )
-        .replace(
-          "{keyword2}",
-          keyword2.charAt(0).toUpperCase() + keyword2.slice(1),
-        );
-
-      const comparisonSentences = sentences.filter(
-        (s) =>
-          s.toLowerCase().includes(keyword.toLowerCase()) &&
-          s.toLowerCase().includes(keyword2.toLowerCase()),
-      );
-
-      const correctComparison =
-        comparisonSentences.length > 0
-          ? comparisonSentences[0].substring(0, 80)
-          : `${keyword} and ${keyword2} are both important concepts in this subject area`;
-
-      options = [
-        correctComparison,
-        `There is no meaningful relationship between them`,
-        `They are completely opposite concepts`,
-        `One is a subset of the other`,
-      ];
-      correctAnswer = options[0];
-      explanation =
-        comparisonSentences.length > 0
-          ? `The material states: "${comparisonSentences[0].substring(0, 150)}"`
-          : `Based on understanding both ${keyword} and ${keyword2}.`;
-    } else if (selectedType === "application") {
-      const template =
-        questionTemplates.application[i % questionTemplates.application.length];
-      questionText = template.replace(
-        "{keyword}",
-        keyword.charAt(0).toUpperCase() + keyword.slice(1),
-      );
-
-      const correctApp = `When you need to ${keyword} in practical situations, such as solving related problems`;
-
-      options = [
-        correctApp,
-        `Only in theoretical academic contexts`,
-        `Never - it has no practical use`,
-        `Only when specifically instructed to do so`,
-      ];
-      correctAnswer = options[0];
-      explanation = `Practical applications of ${keyword} are demonstrated throughout the material.`;
-    } else {
-      // Importance question
-      const template =
-        questionTemplates.importance[i % questionTemplates.importance.length];
-      questionText = template.replace(
-        "{keyword}",
-        keyword.charAt(0).toUpperCase() + keyword.slice(1),
-      );
-
-      options = [
-        `Because ${keyword} is fundamental to understanding this subject area`,
-        `It is only important for academic purposes`,
-        `It has limited importance compared to other concepts`,
-        `Only experts need to understand ${keyword}`,
-      ];
-      correctAnswer = options[0];
-      explanation = `The material emphasizes ${keyword} as a key concept for mastery of this topic.`;
-    }
-
-    // Add difficulty modifier to question text
-    const modifier =
-      difficultyModifiers[difficulty] || difficultyModifiers.medium;
-    if (modifier.prefix && i % 3 === 0) {
-      questionText =
-        modifier.prefix +
-        questionText.charAt(0).toLowerCase() +
-        questionText.slice(1);
-    }
-    if (modifier.suffix && i % 4 === 0) {
-      questionText = questionText + modifier.suffix;
-    }
-
-    questions.push({
-      id: Date.now() + i,
-      text: `${i + 1}. ${questionText}`,
-      type: selectedType === "truefalse" ? "true-false" : "multiple-choice",
-      options: options,
-      correctAnswer: correctAnswer,
-      points: 1,
-      explanation: explanation,
-      sourceContext: sourceSentence.substring(0, 200),
-      topic: keyword,
-    });
-  }
-
-  console.log(`✅ Generated ${questions.length} natural exam questions`);
-  return questions.slice(0, numQuestions);
+  console.log(`✅ Generated ${sanitised.length} questions via Gemini`);
+  return sanitised;
 }
-// Generate questions from file content
+
+// ─── Routes ───────────────────────────────────────────────────────────────────
+
 router.post("/generate-from-file", upload.single("file"), async (req, res) => {
-  console.log("📁 [AI] Generate from file endpoint called");
-  console.log("📊 Request body:", req.body);
+  const fileInfo = await getFileInfo(req.file.path, req.file.originalname);
+  console.log(`📊 File type: ${fileInfo.type}, Size: ${fileInfo.size} bytes`);
+  console.log("📁 [AI] generate-from-file called");
 
   try {
-    // Check if file was uploaded
     if (!req.file) {
-      console.log("❌ No file uploaded");
       return res
         .status(400)
         .json({ error: "No file uploaded. Please select a file." });
     }
 
-    console.log(`✅ File received: ${req.file.originalname}`);
-    console.log(`📊 File size: ${req.file.size} bytes`);
-    console.log(`📊 File path: ${req.file.path}`);
+    console.log(
+      `✅ File received: ${req.file.originalname} (${req.file.size} bytes)`,
+    );
 
-    // Parse request body
-    let numQuestions = parseInt(req.body.numQuestions) || 5;
-    let gradeLevel = parseInt(req.body.gradeLevel) || 11;
+    let numQuestions = Math.min(parseInt(req.body.numQuestions) || 5, 50);
+    let gradeLevel = Math.min(
+      Math.max(parseInt(req.body.gradeLevel) || 11, 1),
+      12,
+    );
     const difficulty = req.body.difficulty || "medium";
-    let questionTypes = [];
     const customInstructions = req.body.customInstructions || "";
 
+    let questionTypes = ["multiple-choice"];
     try {
       questionTypes = JSON.parse(
         req.body.questionTypes || '["multiple-choice"]',
       );
-    } catch (e) {
-      questionTypes = ["multiple-choice"];
+    } catch {
+      /* keep default */
     }
 
-    // Validate values
-    if (isNaN(numQuestions) || numQuestions < 1) numQuestions = 5;
-    if (numQuestions > 50) numQuestions = 50;
-    if (isNaN(gradeLevel) || gradeLevel < 1) gradeLevel = 11;
-    if (gradeLevel > 12) gradeLevel = 12;
-
-    console.log(
-      `📊 Config: ${numQuestions} questions, Grade ${gradeLevel}, ${difficulty}`,
-    );
-    console.log(`📝 Question types: ${questionTypes.join(", ")}`);
-    if (customInstructions)
-      console.log(`📋 Custom instructions: ${customInstructions}`);
-
-    // Extract text from file
     let fileContent = "";
     try {
       fileContent = await extractTextFromFile(
         req.file.path,
         req.file.originalname,
       );
-      console.log(`✅ Text extracted: ${fileContent.length} characters`);
-      console.log(`📝 Preview: ${fileContent.substring(0, 200)}...`);
     } catch (extractError) {
-      console.log("❌ Text extraction error:", extractError.message);
       return res.status(400).json({ error: extractError.message });
-    }
-
-    // Clean up file after extraction
-    try {
-      fs.unlinkSync(req.file.path);
-      console.log("🗑️ Temporary file deleted");
-    } catch (unlinkError) {
-      console.log("⚠️ Could not delete temp file:", unlinkError.message);
+    } finally {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch {
+        /* ignore */
+      }
     }
 
     if (!fileContent || fileContent.trim().length < 50) {
       return res.status(400).json({
         error:
-          "Could not extract sufficient text from file. File may be empty, corrupted, or contains only images.",
+          "Could not extract sufficient text from the file. It may be empty, corrupted, or image-only.",
       });
     }
 
-    // Generate questions based on file content
-    const generatedQuestions = generateQuestionsFromContent(
-      fileContent,
+    console.log(`📝 Extracted ${fileContent.length} chars from file`);
+
+    const questions = await generateQuestionsWithGemini({
+      content: fileContent,
+      topic: null,
       numQuestions,
       gradeLevel,
       difficulty,
       questionTypes,
       customInstructions,
-    );
-
-    console.log(
-      `✅ Generated ${generatedQuestions.length} questions successfully`,
-    );
+    });
 
     res.json({
-      questions: generatedQuestions,
+      questions,
       sessionId: Date.now(),
-      message: `Successfully generated ${generatedQuestions.length} questions from your file.`,
+      message: `Successfully generated ${questions.length} questions from your file.`,
       fileInfo: {
         name: req.file.originalname,
         size: req.file.size,
@@ -680,11 +355,10 @@ router.post("/generate-from-file", upload.single("file"), async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("❌ Generation Error:", error);
-    res.status(500).json({
-      error: "Failed to generate questions",
-      details: error.message,
-    });
+    console.error("❌ generate-from-file error:", error.message);
+    res
+      .status(500)
+      .json({ error: error.message || "Failed to generate questions." });
   }
 });
 
@@ -699,104 +373,103 @@ router.post("/generate-exam", async (req, res) => {
       customInstructions = "",
     } = req.body;
 
-    if (!topic) {
-      return res.status(400).json({ error: "Topic is required" });
+    if (!topic || !topic.trim()) {
+      return res.status(400).json({ error: "Topic is required." });
     }
 
-    const content = `Educational content about ${topic} for grade ${gradeLevel}`;
-
-    const questions = generateQuestionsFromContent(
-      content,
-      numQuestions,
-      gradeLevel,
+    const questions = await generateQuestionsWithGemini({
+      content: null,
+      topic: topic.trim(),
+      numQuestions: Math.min(parseInt(numQuestions) || 5, 50),
+      gradeLevel: Math.min(Math.max(parseInt(gradeLevel) || 11, 1), 12),
       difficulty,
       questionTypes,
       customInstructions,
-    );
+    });
 
-    res.json({ questions });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.json({ questions, sessionId: Date.now() });
+  } catch (error) {
+    console.error("❌ generate-exam error:", error.message);
+    res
+      .status(500)
+      .json({ error: error.message || "Failed to generate questions." });
   }
 });
 
-// Generate replacement for a rejected question
 router.post("/generate-replacement", async (req, res) => {
   const {
     originalQuestion,
     sourceContent,
     customInstructions,
-    gradeLevel,
-    difficulty,
+    gradeLevel = 11,
+    difficulty = "medium",
   } = req.body;
 
-  console.log("🔄 Generating replacement question");
+  console.log("🔄 Generating replacement question via Gemini");
 
   try {
-    // Extract keywords from source content
-    const words = sourceContent.toLowerCase().split(/\s+/);
-    const commonWords = new Set([
-      "the",
-      "a",
-      "an",
-      "and",
-      "of",
-      "to",
-      "in",
-      "for",
-      "on",
-      "with",
-      "by",
-      "at",
-      "from",
-      "is",
-      "are",
-      "was",
-      "were",
-    ]);
-    const keywords = words.filter((w) => w.length > 4 && !commonWords.has(w));
-    const uniqueKeywords = [...new Set(keywords)].slice(0, 10);
-    const newKeyword =
-      uniqueKeywords.length > 0
-        ? uniqueKeywords[Math.floor(Math.random() * uniqueKeywords.length)]
-        : "the content";
+    const contextDescription = sourceContent
+      ? `Based on this source material:\n"""\n${sourceContent.slice(0, 4000)}\n"""`
+      : `Based on the topic of the original question: "${
+          originalQuestion?.text || "general knowledge"
+        }"`;
 
-    // Find a different sentence from sourceContent
-    const sentences = sourceContent
-      .split(/[.!?]+/)
-      .filter((s) => s.trim().length > 20);
-    const newSourceSentence =
-      sentences.length > 0
-        ? sentences[Math.floor(Math.random() * sentences.length)].trim()
-        : sourceContent.substring(0, 150);
+    const originalText = originalQuestion?.text
+      ? `The question to replace is: "${originalQuestion.text}". Generate a DIFFERENT question on the same subject.`
+      : "Generate one new question.";
 
-    const newQuestion = {
+    const prompt = `${contextDescription}
+
+${originalText}
+
+Generate exactly 1 replacement exam question for Grade ${gradeLevel} at ${difficulty} difficulty.
+${customInstructions ? `Additional instructions: ${customInstructions}` : ""}
+
+Respond ONLY with a JSON object (not an array):
+{
+  "text": "Question text (no number prefix)",
+  "type": "multiple-choice",
+  "options": ["Option A", "Option B", "Option C", "Option D"],
+  "correctAnswer": "exact text of correct option",
+  "points": 1,
+  "explanation": "brief explanation"
+}
+
+Output ONLY the JSON object, nothing else.`;
+
+    const jsonText = await callGemini(prompt, 800);
+
+    let q;
+    try {
+      q = JSON.parse(jsonText);
+      if (Array.isArray(q)) q = q[0];
+    } catch {
+      throw new Error(
+        "Gemini returned malformed JSON for replacement question.",
+      );
+    }
+
+    const question = {
       id: Date.now(),
-      text: `Based on the source material, how does the document explain the concept of "${newKeyword}"?`,
-      type: "multiple-choice",
-      options: [
-        `It provides a clear explanation: "${newSourceSentence.substring(0, 60)}..."`,
-        `It mentions it only briefly without detail`,
-        `It contradicts other parts of the document`,
-        `It is not discussed in the source material`,
-      ],
-      correctAnswer: `It provides a clear explanation: "${newSourceSentence.substring(0, 60)}..."`,
-      points: 1,
-      explanation: `This directly relates to: "${newSourceSentence.substring(0, 150)}"`,
-      sourceContent: sourceContent,
+      text: `1. ${String(q.text || "").trim()}`,
+      type: q.type === "true-false" ? "true-false" : "multiple-choice",
+      options: Array.isArray(q.options) ? q.options : ["True", "False"],
+      correctAnswer: String(q.correctAnswer || "").trim(),
+      points: Number(q.points) || 1,
+      explanation: String(q.explanation || "").trim(),
     };
 
-    res.json({ question: newQuestion });
+    res.json({ question });
   } catch (error) {
-    console.error("Replacement Generation Error:", error);
+    console.error("❌ generate-replacement error:", error.message);
     res.status(500).json({
-      error: "Failed to generate replacement question",
-      details: error.message,
+      error: error.message || "Failed to generate replacement question.",
     });
   }
 });
 
-// Store rejected questions
+// ─── Rejected Questions Bank ──────────────────────────────────────────────────
+
 let rejectedQuestionsStore = [];
 
 router.post("/save-rejected", async (req, res) => {
@@ -817,13 +490,13 @@ router.post("/save-rejected", async (req, res) => {
 
   rejectedQuestionsStore.push(rejectedQuestion);
   console.log(
-    `📋 Rejected question saved. Total rejected: ${rejectedQuestionsStore.length}`,
+    `📋 Rejected question saved. Total: ${rejectedQuestionsStore.length}`,
   );
 
   res.json({
     message: "Question saved to rejected bank",
     rejectedCount: rejectedQuestionsStore.length,
-    rejectedQuestion: rejectedQuestion,
+    rejectedQuestion,
   });
 });
 
@@ -836,52 +509,5 @@ router.delete("/rejected-questions/:id", async (req, res) => {
   rejectedQuestionsStore = rejectedQuestionsStore.filter((q) => q.id !== id);
   res.json({ message: "Question removed from rejected bank" });
 });
-
-// Mock endpoint for testing (fallback)
-router.post(
-  "/generate-from-file-mock",
-  upload.single("file"),
-  async (req, res) => {
-    console.log("📁 Mock endpoint called");
-
-    try {
-      if (!req.file) {
-        return res.status(400).json({ error: "No file uploaded" });
-      }
-
-      const numQuestions = parseInt(req.body.numQuestions) || 5;
-      const gradeLevel = parseInt(req.body.gradeLevel) || 11;
-      const difficulty = req.body.difficulty || "medium";
-
-      let fileContent = "";
-      try {
-        fileContent = await extractTextFromFile(
-          req.file.path,
-          req.file.originalname,
-        );
-      } catch (e) {
-        fileContent = `Sample educational content about ${req.file.originalname} for Grade ${gradeLevel} students.`;
-      }
-
-      try {
-        fs.unlinkSync(req.file.path);
-      } catch (e) {}
-
-      const questions = generateQuestionsFromContent(
-        fileContent,
-        numQuestions,
-        gradeLevel,
-        difficulty,
-        ["multiple-choice"],
-        "",
-      );
-
-      res.json({ questions, sessionId: Date.now() });
-    } catch (error) {
-      console.error("Mock Error:", error);
-      res.status(500).json({ error: "Failed to generate questions" });
-    }
-  },
-);
 
 export default router;

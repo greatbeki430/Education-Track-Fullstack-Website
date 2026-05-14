@@ -1,0 +1,195 @@
+# WEB DESIGN AND DEVELOPMENT - Grade 11 Notes
+
+## Chapter 1: Introduction to Web Development
+
+### What is Web Development?
+Web development is the process of creating websites and web applications. It involves:
+- Designing the visual layout (how things look)
+- Writing code (how things work)
+- Managing content (what users see)
+
+### Types of Web Development
+
+1. **Front-end Development** (Client-side)
+   - What users see and interact with
+   - Technologies: HTML, CSS, JavaScript
+   - Runs in the user's browser
+
+2. **Back-end Development** (Server-side)
+   - Handles data, databases, and server logic
+   - Technologies: Node.js, Python, PHP, SQL
+   - Runs on web servers
+
+3. **Full-stack Development**
+   - Combines both front-end and back-end
+   - Can build complete web applications
+
+## Chapter 2: HTML (Hypertext Markup Language)
+
+### What is HTML?
+HTML is the skeleton/structure of web pages. It uses tags to define elements.
+
+### Basic HTML Structure
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Page Title</title>
+</head>
+<body>
+    <h1>Main Heading</h1>
+    <p>This is a paragraph.</p>
+</body>
+</html>
+
+### Common HTML Tags
+
+**Headings:** h1, h2, h3, h4, h5, h6
+- h1 is largest/most important
+- h6 is smallest
+
+**Text Elements:**
+- <p> - paragraph
+- <strong> or <b> - bold text
+- <em> or <i> - italic text
+- <br> - line break
+
+**Links and Images:**
+- <a href="url">Link text</a> - creates hyperlinks
+- <img src="image.jpg" alt="description"> - displays images
+
+**Lists:**
+- <ul> - unordered list (bullets)
+- <ol> - ordered list (numbers)
+- <li> - list item
+
+## Chapter 3: CSS (Cascading Style Sheets)
+
+### What is CSS?
+CSS controls the visual appearance of web pages - colors, fonts, layouts, and animations.
+
+### Three Ways to Add CSS
+
+1. **Inline CSS** (inside HTML tag)
+   <p style="color: red;">Red text</p>
+
+2. **Internal CSS** (in head section)
+   <style>
+     p { color: red; }
+   </style>
+
+3. **External CSS** (separate file)
+   <link rel="stylesheet" href="style.css">
+
+### CSS Syntax
+selector {
+    property: value;
+    property: value;
+}
+
+**Example:**
+h1 {
+    color: blue;
+    font-size: 24px;
+    text-align: center;
+}
+
+### Common CSS Properties
+
+**Colors:**
+- color: text color
+- background-color: background color
+
+**Text Styling:**
+- font-family: "Arial", "Helvetica", sans-serif
+- font-size: 16px, 1.5rem, 100%
+- font-weight: bold, normal
+- text-align: left, center, right
+
+**Box Model Properties:**
+- margin: space outside element
+- padding: space inside element
+- border: line around element
+- width: element width
+- height: element height
+
+## Chapter 4: JavaScript
+
+### What is JavaScript?
+JavaScript makes web pages interactive and dynamic. It adds behavior and functionality.
+
+### Basic JavaScript Concepts
+
+**Variables:**
+let name = "John";        // can change
+const pi = 3.14159;       // cannot change
+
+**Data Types:**
+- String: "Hello", 'World'
+- Number: 42, 3.14
+- Boolean: true, false
+- Array: [1, 2, 3]
+- Object: {name: "John", age: 25}
+
+**Functions:**
+function greet(name) {
+    return "Hello, " + name;
+}
+
+**Conditional Statements:**
+if (age >= 18) {
+    console.log("Adult");
+} else {
+    console.log("Minor");
+}
+
+**DOM Manipulation:**
+// Selecting elements
+document.getElementById("myId");
+document.querySelector(".myClass");
+
+// Changing content
+element.textContent = "New text";
+
+// Adding event listeners
+button.addEventListener("click", () => {
+    alert("Button clicked!");
+});
+
+## Chapter 5: Responsive Web Design
+
+### What is Responsive Design?
+Websites that work well on all devices (desktop, tablet, mobile).
+
+### Media Query Example
+/* Mobile first approach */
+.container {
+    width: 100%;
+}
+
+/* Tablet */
+@media (min-width: 768px) {
+    .container {
+        width: 750px;
+        margin: auto;
+    }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+    .container {
+        width: 980px;
+    }
+}
+
+## Review Questions
+
+1. What is the difference between front-end and back-end development?
+2. Name three common HTML tags and their purposes.
+3. What does CSS stand for and what is its purpose?
+4. How do you add JavaScript to an HTML page?
+5. What is responsive web design? Why is it important?
+6. What are media queries used for?
+7. Name three JavaScript data types.
+8. What is the DOM?
+9. How do you select an element by its ID in JavaScript?
+10. What is the purpose of version control like Git?

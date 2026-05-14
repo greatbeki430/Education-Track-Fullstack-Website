@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Web Design and Development - Grade 11 Notes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 40px;
+            background: white;
+        }
+        h1 {
+            color: #2c7da0;
+            border-bottom: 3px solid #2c7da0;
+            padding-bottom: 10px;
+            margin-top: 30px;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+        h2 {
+            color: #1e466e;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            border-left: 4px solid #2c7da0;
+            padding-left: 15px;
+            font-size: 22px;
+        }
+        h3 {
+            color: #2c7da0;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        h4 {
+            color: #555;
+            margin-top: 15px;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            border-left: 4px solid #2c7da0;
+        }
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        ul, ol {
+            margin-left: 30px;
+            margin-bottom: 15px;
+        }
+        li {
+            margin-bottom: 5px;
+        }
+        p {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #2c7da0;
+        }
+        .header h1 {
+            border: none;
+            font-size: 32px;
+            margin-bottom: 10px;
+            color: #2c7da0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            font-size: 0.9em;
+            color: #666;
+        }
+        .review-questions {
+            background: #f0f7ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .review-questions h2 {
+            margin-top: 0;
+        }
+        strong {
+            color: #2c7da0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 Web Design and Development</h1>
+            <p>Grade 11 - Complete Study Notes</p>
+        </div>
+        
+        <h1>WEB DESIGN AND DEVELOPMENT - Grade 11 Notes</h1>
+<br>
+<h2>Chapter 1: Introduction to Web Development</h2>
+<br>
+<h3>What is Web Development?</h3>
+<p>Web development is the process of creating websites and web applications. It involves:</p>
+<ul><li>Designing the visual layout (how things look)</li>
+<li>Writing code (how things work)</li>
+<li>Managing content (what users see)</li>
+</ul><br>
+<h3>Types of Web Development</h3>
+<br>
+<ul><li><strong>Front-end Development</strong> (Client-side)</li>
+</ul><p>   - What users see and interact with</p>
+<p>   - Technologies: HTML, CSS, JavaScript</p>
+<p>   - Runs in the user's browser</p>
+<br>
+<ul><li><strong>Back-end Development</strong> (Server-side)</li>
+</ul><p>   - Handles data, databases, and server logic</p>
+<p>   - Technologies: Node.js, Python, PHP, SQL</p>
+<p>   - Runs on web servers</p>
+<br>
+<ul><li><strong>Full-stack Development</strong></li>
+</ul><p>   - Combines both front-end and back-end</p>
+<p>   - Can build complete web applications</p>
+<br>
+<h2>Chapter 2: HTML (Hypertext Markup Language)</h2>
+<br>
+<h3>What is HTML?</h3>
+<p>HTML is the skeleton/structure of web pages. It uses tags to define elements.</p>
+<br>
+<h3>Basic HTML Structure</h3>
+<p><!DOCTYPE html></p>
+<html>
+<head>
+<p>    <title>Page Title</title></p>
+</head>
+<p><body></p>
+<p>    <h1>Main Heading</h1></p>
+<p>    <p>This is a paragraph.</p></p>
+</body>
+</html>
+<br>
+<h3>Common HTML Tags</h3>
+<br>
+<p><strong>Headings:</strong> h1, h2, h3, h4, h5, h6</p>
+<ul><li>h1 is largest/most important</li>
+<li>h6 is smallest</li>
+</ul><br>
+<p><strong>Text Elements:</strong></p>
+<ul><li><p> - paragraph</li>
+<li><strong> or <b> - bold text</li>
+<li><em> or <i> - italic text</li>
+<li><br> - line break</li>
+</ul><br>
+<p><strong>Links and Images:</strong></p>
+<ul><li><a href="url">Link text</a> - creates hyperlinks</li>
+<li><img src="image.jpg" alt="description"> - displays images</li>
+</ul><br>
+<p><strong>Lists:</strong></p>
+<ul><li><ul> - unordered list (bullets)</li>
+<li><ol> - ordered list (numbers)</li>
+<li><li> - list item</li>
+</ul><br>
+<h2>Chapter 3: CSS (Cascading Style Sheets)</h2>
+<br>
+<h3>What is CSS?</h3>
+<p>CSS controls the visual appearance of web pages - colors, fonts, layouts, and animations.</p>
+<br>
+<h3>Three Ways to Add CSS</h3>
+<br>
+<ul><li><strong>Inline CSS</strong> (inside HTML tag)</li>
+</ul><p>   <p style="color: red;">Red text</p></p>
+<br>
+<ul><li><strong>Internal CSS</strong> (in head section)</li>
+</ul><pre><code>   &lt;style&gt;
+     p { color: red; }
+   &lt;/style&gt;</code></pre>
+<br>
+<ul><li><strong>External CSS</strong> (separate file)</li>
+</ul><p>   <link rel="stylesheet" href="style.css"></p>
+<br>
+<h3>CSS Syntax</h3>
+<p>selector {</p>
+<p>    property: value;</p>
+<p>    property: value;</p>
+<p>}</p>
+<br>
+<p><strong>Example:</strong></p>
+<p>h1 {</p>
+<p>    color: blue;</p>
+<p>    font-size: 24px;</p>
+<p>    text-align: center;</p>
+<p>}</p>
+<br>
+<h3>Common CSS Properties</h3>
+<br>
+<p><strong>Colors:</strong></p>
+<ul><li>color: text color</li>
+<li>background-color: background color</li>
+</ul><br>
+<p><strong>Text Styling:</strong></p>
+<ul><li>font-family: "Arial", "Helvetica", sans-serif</li>
+<li>font-size: 16px, 1.5rem, 100%</li>
+<li>font-weight: bold, normal</li>
+<li>text-align: left, center, right</li>
+</ul><br>
+<p><strong>Box Model Properties:</strong></p>
+<ul><li>margin: space outside element</li>
+<li>padding: space inside element</li>
+<li>border: line around element</li>
+<li>width: element width</li>
+<li>height: element height</li>
+</ul><br>
+<h2>Chapter 4: JavaScript</h2>
+<br>
+<h3>What is JavaScript?</h3>
+<p>JavaScript makes web pages interactive and dynamic. It adds behavior and functionality.</p>
+<br>
+<h3>Basic JavaScript Concepts</h3>
+<br>
+<p><strong>Variables:</strong></p>
+<p>let name = "John";        // can change</p>
+<p>const pi = 3.14159;       // cannot change</p>
+<br>
+<p><strong>Data Types:</strong></p>
+<ul><li>String: "Hello", 'World'</li>
+<li>Number: 42, 3.14</li>
+<li>Boolean: true, false</li>
+<li>Array: [1, 2, 3]</li>
+<li>Object: {name: "John", age: 25}</li>
+</ul><br>
+<p><strong>Functions:</strong></p>
+<p>function greet(name) {</p>
+<p>    return "Hello, " + name;</p>
+<p>}</p>
+<br>
+<p><strong>Conditional Statements:</strong></p>
+<p>if (age >= 18) {</p>
+<p>    console.log("Adult");</p>
+<p>} else {</p>
+<p>    console.log("Minor");</p>
+<p>}</p>
+<br>
+<p><strong>DOM Manipulation:</strong></p>
+<p>// Selecting elements</p>
+<p>document.getElementById("myId");</p>
+<p>document.querySelector(".myClass");</p>
+<br>
+<p>// Changing content</p>
+<p>element.textContent = "New text";</p>
+<br>
+<p>// Adding event listeners</p>
+<p>button.addEventListener("click", () => {</p>
+<p>    alert("Button clicked!");</p>
+<p>});</p>
+<br>
+<h2>Chapter 5: Responsive Web Design</h2>
+<br>
+<h3>What is Responsive Design?</h3>
+<p>Websites that work well on all devices (desktop, tablet, mobile).</p>
+<br>
+<h3>Media Query Example</h3>
+<p>/<em> Mobile first approach </em>/</p>
+<p>.container {</p>
+<p>    width: 100%;</p>
+<p>}</p>
+<br>
+<p>/<em> Tablet </em>/</p>
+<p>@media (min-width: 768px) {</p>
+<p>    .container {</p>
+<p>        width: 750px;</p>
+<p>        margin: auto;</p>
+<p>    }</p>
+<p>}</p>
+<br>
+<p>/<em> Desktop </em>/</p>
+<p>@media (min-width: 1024px) {</p>
+<p>    .container {</p>
+<p>        width: 980px;</p>
+<p>    }</p>
+<p>}</p>
+<br>
+<h2>Review Questions</h2>
+<br>
+<ul><li>What is the difference between front-end and back-end development?</li>
+<li>Name three common HTML tags and their purposes.</li>
+<li>What does CSS stand for and what is its purpose?</li>
+<li>How do you add JavaScript to an HTML page?</li>
+<li>What is responsive web design? Why is it important?</li>
+<li>What are media queries used for?</li>
+<li>Name three JavaScript data types.</li>
+<li>What is the DOM?</li>
+<li>How do you select an element by its ID in JavaScript?</li>
+<li>What is the purpose of version control like Git?</li>
+</ul><br>
+        
+        <div class="footer">
+            <p>Generated by EduTrack System | Grade 11 Web Development Notes</p>
+            <p>Use these notes to prepare for your web development exam!</p>
+        </div>
+    </div>
+</body>
+</html>

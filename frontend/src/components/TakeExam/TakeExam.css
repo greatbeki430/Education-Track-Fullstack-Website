@@ -1,0 +1,370 @@
+/* Main Container */
+.take-exam-container {
+  display: flex;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  position: relative;
+}
+
+/* Sidebar Toggle Button */
+.sidebar-toggle {
+  position: fixed;
+  top: 50%;
+  left: 280px;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 60px;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-left: none;
+  border-radius: 0 8px 8px 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #2c7da0;
+  transition: all 0.3s ease;
+  z-index: 150;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-toggle.open {
+  left: 0;
+}
+
+.sidebar-toggle:hover {
+  background: #2c7da0;
+  color: white;
+  width: 36px;
+}
+
+/* Sidebar Overlay (for mobile) */
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 99;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Sidebar */
+.exam-sidebar {
+  width: 280px;
+  background: white;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  overflow-y: auto;
+  transition: transform 0.3s ease;
+  z-index: 100;
+}
+
+.exam-sidebar.open {
+  transform: translateX(0);
+}
+
+.exam-sidebar.closed {
+  transform: translateX(-100%);
+}
+
+/* Sidebar Header */
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 2px solid #f0f0f0;
+  background: linear-gradient(135deg, #2c7da0, #1e466e);
+  color: white;
+}
+
+.sidebar-header h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.close-sidebar {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.close-sidebar:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+/* Sidebar Footer */
+.sidebar-footer {
+  padding: 20px;
+  border-top: 1px solid #e0e0e0;
+  margin-top: auto;
+  background: white;
+}
+
+.progress-stats {
+  margin-bottom: 15px;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.stat-label {
+  color: #666;
+}
+
+.stat-value {
+  font-weight: bold;
+  color: #2c7da0;
+}
+
+.progress-bar {
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2c7da0, #1e466e);
+  transition: width 0.3s ease;
+  border-radius: 4px;
+}
+
+/* Submit Button */
+.submit-exam-btn {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #2c7da0, #1e466e);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 10px;
+}
+
+.submit-exam-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(44, 125, 160, 0.3);
+}
+
+.submit-exam-btn:disabled,
+.submit-exam-btn.submitted {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.warning-text {
+  font-size: 12px;
+  color: #ff9800;
+  text-align: center;
+  margin-top: 12px;
+  margin-bottom: 0;
+}
+
+.success-text {
+  font-size: 12px;
+  color: #4caf50;
+  text-align: center;
+  margin-top: 12px;
+  margin-bottom: 0;
+}
+
+/* Main Content */
+.exam-main {
+  flex: 1;
+  margin-left: 280px;
+  padding: 30px;
+  transition: margin-left 0.3s ease;
+  min-height: 100vh;
+}
+
+.exam-main.expanded {
+  margin-left: 0;
+}
+
+/* Questions Area */
+.questions-area {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Error Container */
+.error-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-size: 20px;
+  color: #666;
+}
+
+/* Mobile Menu Button inside header */
+.mobile-menu-btn {
+  display: none;
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 200;
+  background: white;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Floating Submit Button */
+.floating-submit-btn {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4caf50, #45a049);
+  color: white;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+  transition: all 0.3s ease;
+  z-index: 200;
+  opacity: 0;
+  transform: scale(0);
+  pointer-events: none;
+}
+
+.floating-submit-btn.visible {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+.floating-submit-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.5);
+}
+
+.floating-submit-btn:active {
+  transform: scale(0.95);
+}
+
+/* Mobile adjustment for floating button */
+@media (max-width: 768px) {
+  .floating-submit-btn {
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+  }
+}
+
+/* Progress indicator for last question */
+.last-question-indicator {
+  margin-top: 20px;
+  padding: 12px;
+  background: #e8f5e9;
+  border-radius: 8px;
+  text-align: center;
+  color: #4caf50;
+  font-size: 14px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.02);
+  }
+}
+
+@media (max-width: 768px) {
+  .mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .exam-main {
+    margin-left: 0;
+    padding: 15px;
+  }
+
+  .sidebar-toggle {
+    left: 0;
+    top: 20px;
+    transform: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 0 8px 8px 0;
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .sidebar-toggle.open {
+    left: 0;
+  }
+
+  .exam-sidebar {
+    width: 85%;
+    max-width: 300px;
+  }
+}
+
+/* Desktop optimization */
+@media (min-width: 1200px) {
+  .exam-main {
+    padding: 40px;
+  }
+
+  .questions-area {
+    max-width: 1000px;
+  }
+}

@@ -6,11 +6,12 @@ import Dashboard from "./components/Dashboard";
 import Gradebook from "./components/Gradebook";
 import Attendance from "./components/Attendance";
 import Exams from "./components/Exams";
-import TakeExam from "./components/TakeExam";
+import TakeExam from "./components/TakeExam/TakeExam";
 import Announcements from "./components/Announcements";
 import StudentPortal from "./components/StudentPortal";
 import Login from "./components/Login";
 import TVDisplay from "./components/TVDisplay";
+import InfoModal from "./components/common/InfoModal";
 import "./styles/index.css";
 
 // Protected Route Component
@@ -29,6 +30,8 @@ function App() {
   const [user, setUser] = useState(
     JSON.parse(localStorage.getItem("user") || "null"),
   );
+  const [showSessionModal, setShowSessionModal] = useState(false);
+  const [sessionMessage, setSessionMessage] = useState("");
 
   // Set up axios interceptor for authentication
   useEffect(() => {
@@ -38,6 +41,66 @@ function App() {
       delete api.defaults.headers.common["Authorization"];
     }
   }, [token]);
+
+  // Add this useEffect in App component
+  useEffect(() => {
+    const checkSession = async () => {
+      if (token) {
+        try {
+          await api.get("/api/auth/me");
+        } catch (error) {
+          if (error.response?.status === 401) {
+            // Token expired
+            setSessionMessage("Your session has expired. Please login again.");
+            setShowSessionModal(true);
+            setToken(null);
+            setUser(null);
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+          }
+        }
+      }
+    };
+
+    // Check session when page becomes visible again
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        checkSession();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    // Periodic session check every 5 minutes
+    const interval = setInterval(checkSession, 5 * 60 * 1000);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      clearInterval(interval);
+    };
+  }, [token]);
+
+  // Listen for token expiration events
+  useEffect(() => {
+    const handleTokenExpired = (event) => {
+      setSessionMessage(
+        event.detail.message || "Your session has expired. Please login again.",
+      );
+      setShowSessionModal(true);
+      // Clear state
+      setToken(null);
+      setUser(null);
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      delete api.defaults.headers.common["Authorization"];
+    };
+
+    window.addEventListener("auth:token-expired", handleTokenExpired);
+
+    return () => {
+      window.removeEventListener("auth:token-expired", handleTokenExpired);
+    };
+  }, []);
 
   const handleLogin = (newToken, newUser) => {
     setToken(newToken);
@@ -57,7 +120,21 @@ function App() {
 
   // If not logged in, show login page
   if (!token || !user) {
-    return <Login onLogin={handleLogin} />;
+    return (
+      <>
+        <Login onLogin={handleLogin} />
+        <InfoModal
+          isOpen={showSessionModal}
+          onClose={() => {
+            setShowSessionModal(false);
+            window.location.href = "/login";
+          }}
+          type="warning"
+          title="Session Expired"
+          message={sessionMessage}
+        />
+      </>
+    );
   }
 
   return (
@@ -155,6 +232,17 @@ function App() {
           </Routes>
         </div>
       </div>
+
+      <InfoModal
+        isOpen={showSessionModal}
+        onClose={() => {
+          setShowSessionModal(false);
+          window.location.href = "/login";
+        }}
+        type="warning"
+        title="Session Expired"
+        message={sessionMessage}
+      />
     </BrowserRouter>
   );
 }

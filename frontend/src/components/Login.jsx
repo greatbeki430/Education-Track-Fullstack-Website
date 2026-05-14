@@ -1,11 +1,15 @@
 import React, { useState } from "react";
 import api from "../api";
+import InfoModal from "./common/InfoModal";
 
 export default function Login({ onLogin }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -13,13 +17,21 @@ export default function Login({ onLogin }) {
     setError("");
 
     try {
-      const res = await api.post("/auth/login", { username, password });
+      const res = await api.post("/api/auth/login", { username, password });
       onLogin(res.data.token, res.data.user);
     } catch (err) {
-      setError(err.response?.data?.error || "Login failed");
+      setErrorMessage(
+        err.response?.data?.error ||
+          "Login failed. Please check your credentials.",
+      );
+      setShowErrorModal(true);
     } finally {
       setLoading(false);
     }
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
   return (
@@ -42,11 +54,14 @@ export default function Login({ onLogin }) {
           width: "100%",
           maxWidth: "400px",
           boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
+          animation: "fadeInUp 0.5s ease",
         }}
       >
         <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-          <h1 style={{ color: "#1e466e" }}>📚 EduTrack Ultimate</h1>
-          <p>Meskerem Secondary School - Grade 11</p>
+          <h1 style={{ color: "#1e466e", marginBottom: "0.5rem" }}>
+            📚 EduTrack Ultimate
+          </h1>
+          <p style={{ color: "#666" }}>Meskerem Secondary School - Grade 11</p>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -56,6 +71,7 @@ export default function Login({ onLogin }) {
                 display: "block",
                 marginBottom: "0.5rem",
                 fontWeight: "600",
+                color: "#333",
               }}
             >
               Username
@@ -71,6 +87,15 @@ export default function Login({ onLogin }) {
                 padding: "0.75rem",
                 borderRadius: "8px",
                 border: "1px solid #ddd",
+                fontSize: "1rem",
+                transition: "all 0.3s",
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = "#2c7da0";
+                e.target.style.outline = "none";
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = "#ddd";
               }}
             />
           </div>
@@ -81,23 +106,57 @@ export default function Login({ onLogin }) {
                 display: "block",
                 marginBottom: "0.5rem",
                 fontWeight: "600",
+                color: "#333",
               }}
             >
               Password
             </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter password"
-              required
-              style={{
-                width: "100%",
-                padding: "0.75rem",
-                borderRadius: "8px",
-                border: "1px solid #ddd",
-              }}
-            />
+            <div style={{ position: "relative" }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter password"
+                required
+                style={{
+                  width: "100%",
+                  padding: "0.75rem",
+                  paddingRight: "3rem",
+                  borderRadius: "8px",
+                  border: "1px solid #ddd",
+                  fontSize: "1rem",
+                  transition: "all 0.3s",
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = "#2c7da0";
+                  e.target.style.outline = "none";
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = "#ddd";
+                }}
+              />
+              <button
+                type="button"
+                onClick={togglePasswordVisibility}
+                style={{
+                  position: "absolute",
+                  right: "12px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "1.1rem",
+                  color: "#666",
+                  padding: "0",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {showPassword ? "👁️" : "👁️‍🗨️"}
+              </button>
+            </div>
           </div>
 
           {error && (
@@ -106,6 +165,7 @@ export default function Login({ onLogin }) {
                 color: "red",
                 marginBottom: "1rem",
                 textAlign: "center",
+                fontSize: "0.9rem",
               }}
             >
               {error}
@@ -118,13 +178,26 @@ export default function Login({ onLogin }) {
             style={{
               width: "100%",
               padding: "0.75rem",
-              background: "#2c7da0",
+              background: loading
+                ? "#ccc"
+                : "linear-gradient(135deg, #2c7da0, #1e466e)",
               color: "white",
               border: "none",
               borderRadius: "8px",
               fontSize: "1rem",
               fontWeight: "600",
-              cursor: "pointer",
+              cursor: loading ? "not-allowed" : "pointer",
+              transition: "all 0.3s",
+            }}
+            onMouseEnter={(e) => {
+              if (!loading) {
+                e.target.style.transform = "translateY(-2px)";
+                e.target.style.boxShadow = "0 5px 15px rgba(44, 125, 160, 0.3)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.transform = "translateY(0)";
+              e.target.style.boxShadow = "none";
             }}
           >
             {loading ? "Logging in..." : "Login"}
@@ -140,9 +213,39 @@ export default function Login({ onLogin }) {
           }}
         >
           <p>Demo Credentials:</p>
-          <p>Admin: admin / admin123</p>
+          <p
+            style={{
+              background: "#f0f0f0",
+              padding: "0.5rem",
+              borderRadius: "8px",
+            }}
+          >
+            📝 Username: <strong>admin</strong> | Password:{" "}
+            <strong>admin123</strong>
+          </p>
         </div>
       </div>
+
+      <style>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
+
+      <InfoModal
+        isOpen={showErrorModal}
+        onClose={() => setShowErrorModal(false)}
+        type="error"
+        title="Login Failed"
+        message={errorMessage}
+      />
     </div>
   );
 }

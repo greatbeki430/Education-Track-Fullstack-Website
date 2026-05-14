@@ -6,13 +6,15 @@ const router = express.Router();
 // Get all exams
 router.get("/", async (req, res) => {
   try {
-    const exams = await db.all("SELECT * FROM exams ORDER BY createdAt DESC");
+    // const exams = await db.all("SELECT * FROM exams ORDER BY createdAt DESC");
+    const exams = await db.all("SELECT * FROM exams ORDER BY date DESC");
     res.json(exams);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
+// Create exam
 // Create exam
 router.post("/", async (req, res) => {
   const {
@@ -27,23 +29,26 @@ router.post("/", async (req, res) => {
 
   try {
     const result = await db.run(
-      "INSERT INTO exams (title, description, duration, startTime, endTime, questions, createdBy) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO exams (title, description, duration, startTime, endTime, questions, createdBy, date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
       [
         title,
-        description,
-        duration,
-        startTime,
-        endTime,
+        description || "",
+        duration || 30,
+        startTime || null,
+        endTime || null,
         JSON.stringify(questions),
-        createdBy,
+        createdBy || "Unknown",
+        new Date().toISOString(),
       ],
     );
+
     const newExam = await db.get(
       "SELECT * FROM exams WHERE id = ?",
       result.lastID,
     );
     res.status(201).json(newExam);
   } catch (err) {
+    console.error("Error creating exam:", err);
     res.status(500).json({ error: err.message });
   }
 });
