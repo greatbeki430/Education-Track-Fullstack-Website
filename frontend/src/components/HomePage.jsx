@@ -1,111 +1,52 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { translations } from "../translations/homepage";
 import "../styles/homepage.css";
 
 export default function HomePage() {
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [scrolled, setScrolled] = useState(false);
+  const [language, setLanguage] = useState("en"); // 'en', 'am', 'om'
+
+  // Get current language translations
+  const t = translations[language];
 
   // Hero section slides
-  const slides = [
-    {
-      title: "Welcome to EduTrack Ultimate",
-      subtitle:
-        "Complete School Management System for Meskerem Secondary School",
-      description:
-        "Streamline grade management, attendance tracking, online exams, and school communication - all in one place.",
-      icon: "📚",
-      color: "#1e466e",
-    },
-    {
-      title: "Digital Gradebook",
-      subtitle: "Track student performance effortlessly",
-      description:
-        "Record scores, calculate averages automatically, and generate professional reports with one click.",
-      icon: "📊",
-      color: "#2c7da0",
-    },
-    {
-      title: "Online Examinations",
-      subtitle: "Create and conduct exams with automatic timers",
-      description:
-        "AI-powered question generation, auto-grading, and instant results for students.",
-      icon: "📖",
-      color: "#61a5c2",
-    },
-    {
-      title: "Smart TV Display",
-      subtitle: "Automatic announcements on Teachers' Dining Hall TV",
-      description:
-        "Important notices displayed automatically during lunch hours (5 PM - 8 PM).",
-      icon: "📺",
-      color: "#89c2d9",
-    },
-  ];
+  const slides = t.slides;
 
   // Features list
-  const features = [
-    {
-      icon: "📝",
-      title: "Digital Gradebook",
-      description:
-        "Easy score entry, automatic calculations, and multiple export formats",
-      color: "#1e466e",
-    },
-    {
-      icon: "📋",
-      title: "Attendance Tracking",
-      description: "Daily attendance with reports and analytics",
-      color: "#2c7da0",
-    },
-    {
-      icon: "📖",
-      title: "Online Exams",
-      description: "Timed exams with auto-grading and instant results",
-      color: "#61a5c2",
-    },
-    {
-      icon: "🤖",
-      title: "AI Question Generator",
-      description: "Generate exam questions from any document automatically",
-      color: "#89c2d9",
-    },
-    {
-      icon: "📢",
-      title: "Smart Announcements",
-      description: "Post once, display everywhere - including TV",
-      color: "#a9d6e5",
-    },
-    {
-      icon: "📺",
-      title: "TV Integration",
-      description: "Automatic announcement display on dining hall TV",
-      color: "#01497c",
-    },
-    {
-      icon: "📊",
-      title: "Analytics & Reports",
-      description: "Export data to PDF, Excel, Word, and CSV formats",
-      color: "#1e466e",
-    },
-    {
-      icon: "👥",
-      title: "Student Portal",
-      description: "Students view grades, attendance, and exam results",
-      color: "#2c7da0",
-    },
-  ];
+  const features = t.features.items;
 
   // Stats counter animation
   const stats = [
-    { label: "Active Students", value: 250, suffix: "+", icon: "🎓" },
-    { label: "Teachers", value: 18, suffix: "", icon: "👨‍🏫" },
-    { label: "Exams Created", value: 45, suffix: "+", icon: "📝" },
-    { label: "Hours Saved", value: 100, suffix: "+", icon: "⏰" },
+    { label: t.stats.students, value: 250, suffix: "+", icon: "🎓" },
+    { label: t.stats.teachers, value: 18, suffix: "", icon: "👨‍🏫" },
+    { label: t.stats.exams, value: 45, suffix: "+", icon: "📝" },
+    { label: t.stats.hours, value: 100, suffix: "+", icon: "⏰" },
   ];
 
   const [counters, setCounters] = useState(stats.map(() => 0));
+
+  // Language options
+  const languages = [
+    { code: "en", name: "English", flag: "🇬🇧", label: "English" },
+    { code: "am", name: "አማርኛ", flag: "🇪🇹", label: "አማርኛ" },
+    { code: "om", name: "Oromo", flag: "🇪🇹", label: "Afaan Oromo" },
+  ];
+
+  // Save language preference to localStorage
+  useEffect(() => {
+    const savedLanguage = localStorage.getItem("preferredLanguage");
+    if (savedLanguage && translations[savedLanguage]) {
+      setLanguage(savedLanguage);
+    }
+  }, []);
+
+  const changeLanguage = (langCode) => {
+    setLanguage(langCode);
+    localStorage.setItem("preferredLanguage", langCode);
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -116,7 +57,6 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    // Auto-rotate slides
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
     }, 6000);
@@ -124,7 +64,6 @@ export default function HomePage() {
   }, [slides.length]);
 
   useEffect(() => {
-    // Animate counters when stats section comes into view
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -168,7 +107,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="homepage">
+    <div className="homepage" dir={language === "am" ? "ltr" : "ltr"}>
       {/* Navigation Bar */}
       <nav className={`home-nav ${scrolled ? "scrolled" : ""}`}>
         <div className="nav-container">
@@ -179,16 +118,40 @@ export default function HomePage() {
             </span>
           </div>
           <div className="nav-links">
-            <a href="#features">Features</a>
-            <a href="#how-it-works">How It Works</a>
-            <a href="#stats">Impact</a>
+            <a href="#features">{t.nav.features}</a>
+            <a href="#how-it-works">{t.nav.howItWorks}</a>
+            <a href="#stats">{t.nav.impact}</a>
           </div>
-          <button onClick={handleLogin} className="login-btn">
-            <span>🔐</span> Login
-          </button>
+          <div className="nav-right">
+            {/* Language Selector */}
+            <div className="language-selector">
+              <button className="lang-btn">
+                <span>{languages.find((l) => l.code === language)?.flag}</span>
+                <span className="lang-name">
+                  {languages.find((l) => l.code === language)?.name}
+                </span>
+              </button>
+              <div className="lang-dropdown">
+                {languages.map((lang) => (
+                  <button
+                    key={lang.code}
+                    className={`lang-option ${language === lang.code ? "active" : ""}`}
+                    onClick={() => changeLanguage(lang.code)}
+                  >
+                    <span>{lang.flag}</span>
+                    <span>{lang.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <button onClick={handleLogin} className="login-btn">
+              <span>🔐</span> {t.nav.login}
+            </button>
+          </div>
         </div>
       </nav>
 
+      {/* Rest of the component uses the translated content... */}
       {/* Hero Section with Carousel */}
       <section className="hero-section">
         <div className="hero-overlay"></div>
@@ -219,10 +182,10 @@ export default function HomePage() {
           </div>
           <div className="hero-buttons">
             <button onClick={handleLogin} className="btn-primary">
-              Get Started <span>→</span>
+              {t.buttons.getStarted} <span>→</span>
             </button>
             <a href="#features" className="btn-secondary">
-              Learn More <span>↓</span>
+              {t.buttons.learnMore} <span>↓</span>
             </a>
           </div>
         </div>
@@ -237,9 +200,9 @@ export default function HomePage() {
       <section id="features" className="features-section">
         <div className="container">
           <div className="section-header">
-            <span className="section-badge">Features</span>
-            <h2>Everything You Need to Manage Your School</h2>
-            <p>A complete solution for modern education management</p>
+            <span className="section-badge">{t.features.badge}</span>
+            <h2>{t.features.title}</h2>
+            <p>{t.features.subtitle}</p>
           </div>
           <div className="features-grid">
             {features.map((feature, index) => (
@@ -251,8 +214,28 @@ export default function HomePage() {
                 <div
                   className="feature-icon"
                   style={{
-                    background: `${feature.color}20`,
-                    color: feature.color,
+                    background: `${
+                      [
+                        "#1e466e",
+                        "#2c7da0",
+                        "#61a5c2",
+                        "#89c2d9",
+                        "#a9d6e5",
+                        "#01497c",
+                        "#1e466e",
+                        "#2c7da0",
+                      ][index]
+                    }20`,
+                    color: [
+                      "#1e466e",
+                      "#2c7da0",
+                      "#61a5c2",
+                      "#89c2d9",
+                      "#a9d6e5",
+                      "#01497c",
+                      "#1e466e",
+                      "#2c7da0",
+                    ][index],
                   }}
                 >
                   {feature.icon}
@@ -287,40 +270,24 @@ export default function HomePage() {
       <section id="how-it-works" className="how-it-works-section">
         <div className="container">
           <div className="section-header">
-            <span className="section-badge">Simple Process</span>
-            <h2>How EduTrack Ultimate Works</h2>
-            <p>Three simple steps to transform your school management</p>
+            <span className="section-badge">{t.howItWorks.badge}</span>
+            <h2>{t.howItWorks.title}</h2>
+            <p>{t.howItWorks.subtitle}</p>
           </div>
           <div className="steps-container">
-            <div className="step">
-              <div className="step-number">1</div>
-              <div className="step-icon">👨‍💼</div>
-              <h3>Admin Setup</h3>
-              <p>
-                School administrator sets up teachers, students, and classes in
-                minutes
-              </p>
-            </div>
-            <div className="step-arrow">→</div>
-            <div className="step">
-              <div className="step-number">2</div>
-              <div className="step-icon">👨‍🏫</div>
-              <h3>Teacher Dashboard</h3>
-              <p>
-                Teachers manage grades, attendance, and create online exams
-                easily
-              </p>
-            </div>
-            <div className="step-arrow">→</div>
-            <div className="step">
-              <div className="step-number">3</div>
-              <div className="step-icon">🎓</div>
-              <h3>Student Access</h3>
-              <p>
-                Students view grades, take exams, and stay informed via student
-                portal
-              </p>
-            </div>
+            {t.howItWorks.steps.map((step, idx) => (
+              <React.Fragment key={idx}>
+                <div className="step">
+                  <div className="step-number">{step.number}</div>
+                  <div className="step-icon">{step.icon}</div>
+                  <h3>{step.title}</h3>
+                  <p>{step.description}</p>
+                </div>
+                {idx < t.howItWorks.steps.length - 1 && (
+                  <div className="step-arrow">→</div>
+                )}
+              </React.Fragment>
+            ))}
           </div>
         </div>
       </section>
@@ -329,53 +296,24 @@ export default function HomePage() {
       <section className="testimonials-section">
         <div className="container">
           <div className="section-header">
-            <span className="section-badge">Testimonials</span>
-            <h2>Trusted by Educators</h2>
-            <p>See what teachers and administrators are saying</p>
+            <span className="section-badge">{t.testimonials.badge}</span>
+            <h2>{t.testimonials.title}</h2>
+            <p>{t.testimonials.subtitle}</p>
           </div>
           <div className="testimonials-grid">
-            <div className="testimonial-card">
-              <div className="testimonial-quote">"</div>
-              <p className="testimonial-text">
-                This system has saved me hours of manual grade calculation. The
-                AI exam generator is a game-changer!
-              </p>
-              <div className="testimonial-author">
-                <div className="author-avatar">👩‍🏫</div>
-                <div className="author-info">
-                  <h4>Abebe Kebede</h4>
-                  <p>ICT Teacher, Grade 11</p>
+            {t.testimonials.items.map((item, index) => (
+              <div key={index} className="testimonial-card">
+                <div className="testimonial-quote">"</div>
+                <p className="testimonial-text">{item.text}</p>
+                <div className="testimonial-author">
+                  <div className="author-avatar">{item.avatar}</div>
+                  <div className="author-info">
+                    <h4>{item.author}</h4>
+                    <p>{item.role}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="testimonial-card">
-              <div className="testimonial-quote">"</div>
-              <p className="testimonial-text">
-                The TV announcement feature is brilliant. Teachers never miss
-                important updates during lunch hours.
-              </p>
-              <div className="testimonial-author">
-                <div className="author-avatar">👨‍🏫</div>
-                <div className="author-info">
-                  <h4>Bekele Alemu</h4>
-                  <p>Head Teacher</p>
-                </div>
-              </div>
-            </div>
-            <div className="testimonial-card">
-              <div className="testimonial-quote">"</div>
-              <p className="testimonial-text">
-                Students love being able to check their grades and attendance
-                anytime through the student portal.
-              </p>
-              <div className="testimonial-author">
-                <div className="author-avatar">👩‍🎓</div>
-                <div className="author-info">
-                  <h4>Chaltu Mohammed</h4>
-                  <p>Grade 11 Student</p>
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
@@ -384,13 +322,10 @@ export default function HomePage() {
       <section className="cta-section">
         <div className="container">
           <div className="cta-content">
-            <h2>Ready to Transform Your School Management?</h2>
-            <p>
-              Join Meskerem Secondary School in embracing digital education
-              management
-            </p>
+            <h2>{t.cta.title}</h2>
+            <p>{t.cta.subtitle}</p>
             <button onClick={handleLogin} className="cta-btn">
-              Login to Dashboard <span>→</span>
+              {t.cta.button} <span>→</span>
             </button>
           </div>
         </div>
@@ -405,9 +340,9 @@ export default function HomePage() {
               <span>EduTrack Ultimate</span>
             </div>
             <div className="footer-links">
-              <a href="#features">Features</a>
-              <a href="#how-it-works">How It Works</a>
-              <a href="#stats">Impact</a>
+              <a href="#features">{t.nav.features}</a>
+              <a href="#how-it-works">{t.nav.howItWorks}</a>
+              <a href="#stats">{t.nav.impact}</a>
               <a
                 href="#"
                 onClick={(e) => {
@@ -415,19 +350,105 @@ export default function HomePage() {
                   navigate("/login");
                 }}
               >
-                Login
+                {t.nav.login}
               </a>
             </div>
             <div className="footer-info">
-              <p>Meskerem Secondary School - Communities</p>
-              <p>Addis Ababa, Ethiopia</p>
+              <p>{t.footer.school}</p>
+              <p>{t.footer.address}</p>
             </div>
           </div>
           <div className="footer-bottom">
-            <p>&copy; 2026 EduTrack Ultimate. All rights reserved.</p>
+            <p>&copy; 2026 {t.footer.copyright}</p>
           </div>
         </div>
       </footer>
+
+      <style>{`
+        /* Language Selector Styles */
+        .nav-right {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+
+        .language-selector {
+          position: relative;
+        }
+
+        .lang-btn {
+          background: rgba(255, 255, 255, 0.15);
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          padding: 0.5rem 1rem;
+          border-radius: 30px;
+          color: white;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.9rem;
+          transition: all 0.3s;
+        }
+
+        .lang-btn:hover {
+          background: rgba(255, 255, 255, 0.25);
+        }
+
+        .lang-dropdown {
+          position: absolute;
+          top: 100%;
+          right: 0;
+          margin-top: 0.5rem;
+          background: white;
+          border-radius: 12px;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+          overflow: hidden;
+          min-width: 140px;
+          display: none;
+          z-index: 1000;
+        }
+
+        .language-selector:hover .lang-dropdown {
+          display: block;
+        }
+
+        .lang-option {
+          display: flex;
+          align-items: center;
+          gap: 0.8rem;
+          width: 100%;
+          padding: 0.7rem 1rem;
+          border: none;
+          background: white;
+          cursor: pointer;
+          transition: background 0.2s;
+          text-align: left;
+          font-size: 0.9rem;
+        }
+
+        .lang-option:hover {
+          background: #f0f2f5;
+        }
+
+        .lang-option.active {
+          background: #e1f0f7;
+          color: #2c7da0;
+        }
+
+        @media (max-width: 768px) {
+          .lang-name {
+            display: none;
+          }
+          
+          .lang-btn {
+            padding: 0.5rem;
+          }
+          
+          .nav-right {
+            gap: 0.5rem;
+          }
+        }
+      `}</style>
     </div>
   );
 }
