@@ -172,327 +172,350 @@ export const translations = {
     },
   },
   am: {
-    // አማርኛ - Amharic
+    // Navigation
     nav: {
       features: "ባህሪያት",
       howItWorks: "እንዴት እንደሚሰራ",
-      impact: "ተጽእኖ",
-      login: "ግባ",
+      impact: "ውጤታማነት",
+      login: "ይግቡ",
     },
+    // Hero Slides
     slides: [
       {
-        title: "እንኳን ወደ EduTrack Ultimate በደህና መጡ",
-        subtitle: "ለመስቀረም ሁለተኛ ደረጃ ትምህርት ቤት የተሟላ የትምህርት ቤት አስተዳደር ሥርዓት",
+        title: "ወደ EduTrack Ultimate እንኳን ደህና መጡ",
+        subtitle: "ለመስከረም ሁለተኛ ደረጃ ትምህርት ቤት የተሟላ የትምህርት ቤት አስተዳደር ስርዓት",
         description:
-          "የውጤት አስተዳደርን፣ የእንቅስቃሴ ክትትልን፣ የመስመር ላይ ፈተናዎችን እና የትምህርት ቤት መግባቢያን በአንድ ቦታ ያቀላጥፉ።",
+          "የውጤት አስተዳደርን፣ የየዕለቱን መገኘት መቆጣጠሪያን፣ የኦንላይን ፈተናዎችን እና የትምህርት ቤቱን ግንኙነት ሁሉንም በአንድ ቦታ ያቀላጥፉ።",
         icon: "📚",
       },
       {
         title: "ዲጂታል የውጤት መዝገብ",
-        subtitle: "የተማሪዎችን አፈጻጸም በቀላሉ ይከታተሉ",
+        subtitle: "የተማሪዎችን አፈጻጸም ያለ ምንም ጥረት ይከታተሉ",
         description:
-          "ውጤቶችን ይመዝግቡ፣ አማካዮችን በራስ-ሰር ያስሉ እና በአንድ ጠቅታ ሙያዊ ሪፖርቶችን ያዘጋጁ።",
+          "ውጤቶችን ይመዝግቡ፣ አማካዮችን በራስ-ሰር ያስሉ እና በአንድ ጠቅታ ደረጃቸውን የጠበቁ ሪፖርቶችን ያውጡ።",
         icon: "📊",
       },
       {
-        title: "የመስመር ላይ ፈተናዎች",
-        subtitle: "ፈተናዎችን በራስ-ሰር የጊዜ ቆጣሪ ይፍጠሩ እና ያካሂዱ",
+        title: "የኦንላይን ፈተናዎች",
+        subtitle: "በራስ-ሰር የጊዜ ቆጣሪ ፈተናዎችን ይፍጠሩ እና ያካሂዱ",
         description:
-          "በአይ ኃይል የሚንቀሳቀሱ ጥያቄዎች ማመንጨት፣ ራስ-ሰር ውጤት አሰጣጥ እና ለተማሪዎች ፈጣን ውጤቶች።",
+          "በአርቴፊሻል ኢንተለጀንስ (AI) የታገዘ የፈተና ጥያቄዎች ዝግጅት፣ አውቶማቲክ እርማት እና ለተማሪዎች ፈጣን ውጤት።",
         icon: "📖",
       },
       {
         title: "ስማርት ቲቪ ማሳያ",
-        subtitle: "በአስተማሪዎች መመገቢያ አዳራሽ ቲቪ ላይ በራስ-ሰር ማስታወቂያዎች",
-        description: "አስፈላጊ ማስታወቂያዎች በምሳ ሰአት (ከ5፡00 - 8፡00 ምሽት) በራስ-ሰር ይታያሉ።",
+        subtitle: "በመምህራን የመመገቢያ አዳራሽ ቲቪ ላይ የሚተላለፉ አውቶማቲክ ማስታወቂያዎች",
+        description:
+          "አስፈላጊ ማስታወቂያዎች በምሳ ሰዓት (ከቀኑ 11:00 እስከ ምሽቱ 2:00 ሰዓት) በራስ-ሰር በቲቪው ላይ ይታያሉ።",
         icon: "📺",
       },
     ],
+    // Features
     features: {
       badge: "ባህሪያት",
-      title: "ትምህርት ቤትዎን ለማስተዳደር የሚያስፈልግዎ ሁሉም ነገር",
-      subtitle: "ለዘመናዊ የትምህርት አስተዳደር የተሟላ መፍትሄ",
+      title: "ትምህርት ቤትዎን ለማስተዳደር የሚያስፈልጉዎት ነገሮች ሁሉ",
+      subtitle: "ለዘመናዊ ትምህርት አስተዳደር የተሟላ መፍትሄ",
       items: [
         {
           icon: "📝",
           title: "ዲጂታል የውጤት መዝገብ",
-          description: "ቀላል ውጤት ማስገባት፣ ራስ-ሰር ስሌቶች እና በርካታ የማስወጣት ቅርጸቶች",
+          description:
+            "ቀላል የውጤት ማስገቢያ፣ አውቶማቲክ ስሌቶች እና በተለያዩ የፋይል አይነቶች ማውረጃ አማራጮች",
         },
         {
           icon: "📋",
-          title: "የእንቅስቃሴ ክትትል",
-          description: "በሪፖርቶች እና በማጥናት ቀን ቀን መገኘት",
+          title: "የመገኘት ክትትል",
+          description: "የዕለት ተዕለት የተማሪዎች መገኘት ከዝርዝር ትንታኔዎች እና ሪፖርቶች ጋር",
         },
         {
           icon: "📖",
-          title: "የመስመር ላይ ፈተናዎች",
-          description: "በጊዜ የተወሰኑ ፈተናዎች ከራስ-ሰር ውጤት አሰጣጥ እና ፈጣን ውጤቶች ጋር",
+          title: "የኦንላይን ፈተናዎች",
+          description: "በሰዓት የተገደቡ ፈተናዎች ከአውቶማቲክ እርማት እና ፈጣን ውጤት ጋር",
         },
         {
           icon: "🤖",
-          title: "አይ ጥያቄ ማመንጫ",
-          description: "ከማንኛውም ሰነድ በራስ-ሰር የፈተና ጥያቄዎችን ያመንጩ",
+          title: "የ AI ጥያቄ ማመንጫ",
+          description: "ከማንኛውም ሰነድ ላይ የፈተና ጥያቄዎችን በራስ-ሰር በ AI ያውጡ",
         },
         {
           icon: "📢",
-          title: "ስማርት ማስታወቂያዎች",
-          description: "አንድ ጊዜ ይለጥፉ፣ በሁሉም ቦታ ይታዩ - ቲቪን ጨምሮ",
+          title: "ዘመናዊ ማስታወቂያዎች",
+          description: "አንድ ጊዜ ይጻፉ፣ በሁሉም ቦታ ያሳዩ - የቲቪ ማሳያዎችን ጨምሮ",
         },
         {
           icon: "📺",
-          title: "ቲቪ ውህደት",
-          description: "በመመገቢያ አዳራሽ ቲቪ ላይ በራስ-ሰር ማስታወቂያ ማሳያ",
+          title: "የቲቪ ትስስር",
+          description: "በመምህራን መመገቢያ አዳራሽ ቲቪ ላይ ማስታወቂያዎችን በራስ-ሰር ማሳየት",
         },
         {
           icon: "📊",
-          title: "ትንተና እና ሪፖርቶች",
-          description: "ውሂብን ወደ ፒዲኤፍ፣ ኤክሴል፣ ዎርድ እና ሲኤስቪ ቅርጸቶች ያስወጡ",
+          title: "ትንታኔ እና ሪፖርቶች",
+          description:
+            "መረጃዎችን ወደ PDF, Excel, Word እና CSV ፋይሎች በቀላሉ መለወጥ እና ማውረድ",
         },
         {
           icon: "👥",
-          title: "የተማሪ ፖርታል",
-          description: "ተማሪዎች ውጤቶችን፣ እንቅስቃሴን እና የፈተና ውጤቶችን ይመለከታሉ",
+          title: "የተማሪዎች ፖርታል",
+          description: "ተማሪዎች ውጤታቸውን፣ መገኘታቸውን እና የፈተና ውጤቶቻቸውን የሚመለከቱበት ገጽ",
         },
       ],
     },
+    // Stats
     stats: {
       students: "ንቁ ተማሪዎች",
-      teachers: "አስተማሪዎች",
+      teachers: "መምህራን",
       exams: "የተፈጠሩ ፈተናዎች",
-      hours: "የተቀመጡ ሰአታት",
+      hours: "የተቆጠበ ሰዓት",
     },
+    // How It Works
     howItWorks: {
       badge: "ቀላል ሂደት",
-      title: "EduTrack Ultimate እንዴት እንደሚሰራ",
-      subtitle: "የትምህርት ቤት አስተዳደርዎን ለመለወጥ ሶስት ቀላል ደረጃዎች",
+      title: "EduTrack Ultimate እንዴት ይሰራል?",
+      subtitle: "የትምህርት ቤትዎን አስተዳደር ዲጂታል ለማድረግ ሶስት ቀላል እርምጃዎች",
       steps: [
         {
           number: "1",
           icon: "👨‍💼",
-          title: "አስተዳዳሪ ማዋቀር",
+          title: "የአስተዳዳሪ ቅንብር",
           description:
-            "የትምህርት ቤት አስተዳዳሪ አስተማሪዎችን፣ ተማሪዎችን እና ክፍሎችን በደቂቃዎች ውስጥ ያዋቅራል",
+            "የትምህርት ቤቱ አስተዳዳሪ መምህራንን፣ ተማሪዎችን እና ክፍሎችን በደቂቃዎች ውስጥ ያዋቅራል",
         },
         {
           number: "2",
           icon: "👨‍🏫",
-          title: "የአስተማሪ ዳሽቦርድ",
-          description: "አስተማሪዎች ውጤቶችን፣ እንቅስቃሴን እና የመስመር ላይ ፈተናዎችን በቀላሉ ያስተዳድራሉ",
+          title: "የመምህራን ዳሽቦርድ",
+          description:
+            "መምህራን ውጤቶችን፣ መገኘትን ያስተዳድራሉ እንዲሁም በቀላሉ የኦንላይን ፈተናዎችን ይፈጥራሉ",
         },
         {
           number: "3",
           icon: "🎓",
-          title: "የተማሪ መዳረሻ",
+          title: "የተማሪዎች መግቢያ",
           description:
-            "ተማሪዎች ውጤቶችን ይመለከታሉ፣ ፈተናዎችን ይወስዳሉ እና በተማሪ ፖርታል በመረጃ ይዘመናሉ",
+            "ተማሪዎች በተማሪ ፖርታል በኩል ውጤታቸውን ይመለከታሉ፣ ፈተናዎችን ይወስዳሉ እና መረጃዎችን ያገኛሉ",
         },
       ],
     },
+    // Testimonials
     testimonials: {
-      badge: "ምስክርነቶች",
-      title: "በአስተማሪዎች የታመነ",
-      subtitle: "አስተማሪዎች እና አስተዳዳሪዎች ምን እያሉ እንደሆነ ይመልከቱ",
+      badge: "የምስክርነት ቃላት",
+      title: "በትምህርት ባለሙያዎች የታመነ",
+      subtitle: "መምህራን እና አስተዳዳሪዎች ምን እያሉ እንደሆነ ይመልከቱ",
       items: [
         {
-          text: "ይህ ሥርዓት በእጅ የሚሰራ የውጤት ስሌት ሰአታትን ቆጥቦልኛል። የአይ ጥያቄ ማመንጫው ጨዋታን የሚቀይር ነው!",
+          text: "ይህシステム የውጤት ሪፖርቶችን በእጄ ከመስራት የሚያጠፋውን ብዙ ሰዓታት አድኖልኛል። የ AI ፈተና ማመንጫው ትልቅ ለውጥ ያመጣ ነው!",
           author: "አበበ ከበደ",
-          role: "አይሲቲ አስተማሪ፣ 11ኛ ክፍል",
+          role: "የአይሲቲ (ICT) መምህር፣ 11ኛ ክፍል",
           avatar: "👩‍🏫",
         },
         {
-          text: "የቲቪ ማስታወቂያ ባህሪ በጣም ጥሩ ነው። አስተማሪዎች በምሳ ሰአት አስፈላጊ ማስታወቂያዎችን አያመልጧቸውም።",
+          text: "የቲቪ ማስታወቂያ ባህሪው ድንቅ ነው። መምህራን በምሳ ሰዓት ጠቃሚ የሆኑ ወቅታዊ መረጃዎች በጭራሽ አያመልጧቸውም።",
           author: "በቀለ አለሙ",
-          role: "ዋና አስተማሪ",
+          role: "ርዕሰ መምህር",
           avatar: "👨‍🏫",
         },
         {
-          text: "ተማሪዎች በማንኛውም ጊዜ ውጤቶቻቸውን እና እንቅስቃሴዎቻቸውን በተማሪ ፖርታል በኩል ማየት በመቻላቸው ይወዳሉ።",
-          author: "ቻልቱ መሀመድ",
-          role: "11ኛ ክፍል ተማሪ",
+          text: "ተማሪዎች በተማሪዎች ፖርታል አማካኝነት በማንኛውም ጊዜ ውጤታቸውን እና መገኘታቸውን ማረጋገጥ መቻላቸውን በጣም ወደውታል።",
+          author: "ጫልቱ መሀመድ",
+          role: "የ11ኛ ክፍል ተማሪ",
           avatar: "👩‍🎓",
         },
       ],
     },
+    // CTA
     cta: {
-      title: "የትምህርት ቤት አስተዳደርዎን ለመለወጥ ዝግጁ ነዎት?",
-      subtitle: "ዲጂታል ትምህርት አስተዳደርን ለመቀበል ከመስቀረም ሁለተኛ ደረጃ ትምህርት ቤት ጋር ይቀላቀሉ",
-      button: "ወደ ዳሽቦርድ ግባ",
+      title: "የትምህርት ቤትዎን አስተዳደር ለመለወጥ ተዘጋጅተዋል?",
+      subtitle:
+        "ዲጂታል የትምህርት አስተዳደር ስርዓትን በመተግበር ከመስከረም ሁለተኛ ደረጃ ትምህርት ቤት ጋር ይተባበሩ",
+      button: "ወደ ዳሽቦርድ ይግቡ",
     },
+    // Footer
     footer: {
-      school: "መስቀረም ሁለተኛ ደረጃ ትምህርት ቤት - ማህበረሰቦች",
+      school: "መስከረም ሁለተኛ ደረጃ ትምህርት ቤት - ማህበረሰቦች",
       address: "አዲስ አበባ፣ ኢትዮጵያ",
       copyright: "EduTrack Ultimate። መብቱ በህግ የተጠበቀ ነው።",
     },
+    // Buttons
     buttons: {
       getStarted: "ይጀምሩ",
       learnMore: "ተጨማሪ ይወቁ",
     },
   },
   om: {
-    // Afaan Oromo - Afan Oromo
+    // Navigation
     nav: {
-      features: "Amajjiiwwan",
-      howItWorks: "Akkamti Hojii",
+      features: "Amaloota",
+      howItWorks: "Akkaataa Hojii",
       impact: "Dhiibbaa",
-      login: "Seenuu",
+      login: "Seeni",
     },
+    // Hero Slides
     slides: [
       {
-        title: "Baga EduTrack Ultimate fudhatanii dhufte",
+        title: "Baga Gara EduTrack Ultimate Nagaan Dhuftan",
         subtitle:
-          "Sistimii Iddoo Barnootaa Guutuu Mana Barnootaa Sadarkaa 2ffaa Meskerem",
+          "Sirna Bulchiinsa Mana Barumsaa Guutuu Mana Barumsa Sadarkaa 2ffaa Meskeremiif",
         description:
-          "Bulchiinsa maarkii, to'annaa argama, qormaata onlaayinii, fi walqunnamtii mana barnootaa - hunduma iddoo tokko keessatti.",
+          "Bulchiinsa qabxii, hordoffii argama barattootaa, qorannoolee toora intarnetii fi qunnamtii mana barumsaa hunda iddoo tokkotti haala salphaan qindeessaa.",
         icon: "📚",
       },
       {
-        title: "Galmee Maarkii Digitaalaa",
-        subtitle: "Sadarkaa Barattootaa Salphatti hordofaa",
+        title: "Galmee Qabxii Diijitaalaa",
+        subtitle: "Raawwii barattootaa haala salphaan hordofaa",
         description:
-          "Maarkiiwwan galmeessi, giddugaleessa otomaatikkiin shallagi, ragaawwan ogeessummaan supha tokkoon baa'i.",
+          "Qabxii galmeessaa, jireenya giddu-galeessaa ofumaan herregaa, fi cuqaasinsaa tokkoon gabaasa ogummaa qabu oomishaa.",
         icon: "📊",
       },
       {
-        title: "Qormaanni Onlaayinii",
-        subtitle: "Qormaata yeroo murtaa'e keessatti uumiitii geggeessi",
+        title: "Qormaata Toora Intarnetii",
+        subtitle:
+          "Safartuu yeroo of-harkaa qabaniin qormaata uumaa fi gaggeessaa",
         description:
-          "Gaafiilee fayyadamtuu AI, maarkii otomaatikkiin kennuu, fi bu'aa yeroo isaatiif barattootaaf.",
+          "Uumama gaaffilee humna namtolchee (AI) gargaarame, qorannoo ofumaan sirreeffamuu fi bu'aa hatattamaa barattootaaf.",
         icon: "📖",
       },
       {
-        title: "TV Ibsa",
-        subtitle:
-          "Beeksisawwan TV Mana Cinaa Barsiisotaa irratti otomaatikkiin",
+        title: "Mul'istuu TV Smart",
+        subtitle: "Beeksisa ofumaan TV Galma Nyaataa Barsiisotaa irratti darbu",
         description:
-          "Beeksisawwan murteessaannan yeroo laaqana (sa'aatii 5:00 - 8:00) otomaatikkiin agarsiifamu.",
+          "Beeksisawwan barbaachisoo yeroo laaqanaa (Sa'aatii 11:00 hanga 2:00) ofumaan ni mul'atu.",
         icon: "📺",
       },
     ],
+    // Features
     features: {
-      badge: "Amajjiiwwan",
-      title: "Hundumtuu Mana Barnootaa Keessan Bulchuuf Waan Barbaaddan",
-      subtitle: "Iddoo Barnootaa Ammayyaaf furmaata guutuu",
+      badge: "Amaloota",
+      title: "Mana Barumsaa Keessan Bulchuuf Wanta Barbaaddan Hunda",
+      subtitle: "Bulchiinsa barnoota ammayyaatiif furmaata guutuu",
       items: [
         {
           icon: "📝",
-          title: "Galmee Maarkii Digitaalaa",
+          title: "Galmee Qabxii Diijitaalaa",
           description:
-            "Galmee maarkii salphaa, shallaggii otomaatikkiin, akkasumas baay'ee baa'uu",
+            "Galmee qabxii salphaa, herrega ofumaan raawwatamu fi bifa adda addaan erguu",
         },
         {
           icon: "📋",
-          title: "To'annaa Argama",
-          description: "To'annaa guyyaa guyyaa ragaa fi qorannoo wajjin",
+          title: "Hordoffii Argama Barattootaa",
+          description: "Hirmaannaa guyyaa guyyaa gabaasa fi qaaccessa waliin",
         },
         {
           icon: "📖",
-          title: "Qormaanni Onlaayinii",
+          title: "Qormaata Toora Intarnetii",
           description:
-            "Qormaata yeroo murtaa'e, maarkii otomaatikkiin, fi bu'aa yeroodhaaf",
+            "Qormaata yeroon daangeffame kan ofumaan qabxii qabu fi bu'aa hatattamaa",
         },
         {
           icon: "🤖",
-          title: "Uumama Gaafiilee AI",
+          title: "Uumaa Gaaffii AI",
           description:
-            "Gaafiilee qormaataa asgaawwan kamiiraa otomaatikkiin baasii",
+            "Sanada kamiyyuu keessaa gaaffilee qormaataa ofumaan AI'n uuma",
         },
         {
           icon: "📢",
-          title: "Beeksisa Amaarii",
-          description: "Al tokko Maxxansi, asgaawwan hundatti - TV dabalee",
+          title: "Beeksisa Salphaa",
+          description:
+            "Al tokko maxxansaa, bakka hundatti argisiisaa - TV dabalatee",
         },
         {
           icon: "📺",
-          title: "Walitti Makuu TV",
-          description: "Beeksisa TV Mana Cinaatti otomaatikkiin agarsiisuu",
+          title: "Madaqsuu TV Waliin",
+          description: "TV galma nyaataa irratti beeksisa ofumaan mul'isuu",
         },
         {
           icon: "📊",
-          title: "Xiinxaa fi Ragaawwan",
-          description: "Daaataa PDF, Excel, Word, fi CSV tti baasuu",
+          title: "Qaaccessa & Gabaasa",
+          description:
+            "Daataa gara bifa PDF, Excel, Word, fi CSV tti jijjiiruun erguu",
         },
         {
           icon: "👥",
-          title: "Balbalaa Barattootaa",
+          title: "Seensa Barataa",
           description:
-            "Barattoonni maarkii, argamaa, fi bu'aa qormaataa ilaalu",
+            "Barattoonni qabxii, hirmaannaa fi bu'aa qormaataa isaanii itti ilaalan",
         },
       ],
     },
+    // Stats
     stats: {
-      students: "Barattoota Hojiirraa",
+      students: "Barattoota Dalagoo",
       teachers: "Barsiisota",
       exams: "Qormaata Uumame",
-      hours: "Sa'aatii Billifame",
+      hours: "Sa'aatii Haffame",
     },
+    // How It Works
     howItWorks: {
       badge: "Adeemsa Salphaa",
-      title: "Akkamti EduTrack Ultimate Hojii",
+      title: "EduTrack Ultimate Akkamitti Hojjeta?",
       subtitle:
-        "Tarkaanfii salphaa sadan bulchiinsa mana barnootaa keessan jijjiiruuf",
+        "Bulchiinsa mana barumsaa keessanii gara diijitaalaatti jijjiiruuf tarkaanfilee salphaa sadih",
       steps: [
         {
           number: "1",
           icon: "👨‍💼",
-          title: "Qindaa'ina Idmaa",
+          title: "Qindaa'ina Bulchaa",
           description:
-            "Idoon mana barnootaa barsiisota, barattoota, fi kutaawwan daqiiqaa keessatti qindeessa",
+            "Bulchaan mana barumsaa daqiiqaa muraasa keessatti barsiisota, barattootaa fi kutaalee qindeessa",
         },
         {
           number: "2",
           icon: "👨‍🏫",
-          title: "Daashboard Barsiisaa",
+          title: "Daashboordii Barsiisaa",
           description:
-            "Barsiisonni maarkii, argamaa, fi qormaata onlaayinii salphaatti bulchu",
+            "Barsiisoliin qabxii, argama barattootaa bulchu fi qormaata toora intarnetii salphaatti uumu",
         },
         {
           number: "3",
           icon: "🎓",
-          title: "Seensa Barattootaa",
+          title: "Seensa Barataa",
           description:
-            "Barattoonni maarkii, qormaata, fi beeksisa balbalaan barattootaa qofa ilaalu",
+            "Barattoonni karaa seensa barataa qabxii isaanii ilaalu, qormaata fudhatu fi odeeffannoo argatu",
         },
       ],
     },
+    // Testimonials
     testimonials: {
-      badge: "Dhugaateessa",
-      title: "Barsiisotaan Amaname",
-      subtitle: "Waan Barsiisonni fi Idoonni jedhan ilaali",
+      badge: "Dhugaa-baasii",
+      title: "Hayyoota Barnootaan Kan Amaname",
+      subtitle: "Barsiisotaa fi bulchitoonni maal jechaa akka jiran ilaalaa",
       items: [
         {
-          text: "Sistimiin kun sa'aatii lakkoofsa maarkii harkaa naaf biliseera. Uumamaan gaafiilee AI isaa ni jijjiirama!",
+          text: "Sirni kun sa'aatii ani harki qabxii herreguuf gubu baay'ee naaf oolcheera. Uumaan qormaataa AI kun baay'ee dinqisiisaadha!",
           author: "Abebe Kebede",
           role: "Barsiisaa ICT, Kutaa 11",
           avatar: "👩‍🏫",
         },
         {
-          text: "Amajjiin beeksisa TV isaa beekamaa dha. Barsiisonni beeksisa murteessaa yeroo laaqanaa hin irraanfatamu.",
+          text: "Amalli beeksisa TV baay'ee gaariidha. Barsiisoliin yeroo laaqanaa odeeffannoo barbaachisoo hin dhaban.",
           author: "Bekele Alemu",
-          role: "Barsiisaa Gooftaa",
+          role: "Itti Gaafatamaa Mana Barumsaa",
           avatar: "👨‍🏫",
         },
         {
-          text: "Barattoonni maarkii fi argamaa isaanii yeroo kamiiyu balbalan barattootaa qofa ilaalu jaallatu.",
+          text: "Barattoonni yeroo kamiyyuu seensa barataatiin qabxii fi hirmaannaa isaanii mirkaneeffachuu danda'uu isaanii baay'ee jaallatu.",
           author: "Chaltu Mohammed",
-          role: "Barattaa Kutaa 11",
+          role: "Barattuu Kutaa 11",
           avatar: "👩‍🎓",
         },
       ],
     },
+    // CTA
     cta: {
-      title: "Bulchiinsa Mana Barnootaa Keessan Jijjiiruuf Qophoo'uudhaa?",
+      title: "Bulchiinsa Mana Barumsaa Keessan Jijjiiruuf Qophii Keessanii?",
       subtitle:
-        "Bulchiinsa barnootaa digitaalaa fudhachuuf Mana Barnootaa Meskerem wajjin makaa",
-      button: "Daashboardiin Seenuu",
+        "Bulchiinsa barnoota diijitaalaa fudhachuu irratti Mana Barumsaa Sadarkaa 2ffaa Meskerem waliin dabalami",
+      button: "Gara Daashboordii Seeni",
     },
+    // Footer
     footer: {
-      school: "Mana Barnootaa Sadarkaa 2ffaa Meskerem - Ummata",
+      school: "Mana Barumsaa Sadarkaa 2ffaa Meskerem - Hawaasa",
       address: "Finfinnee, Itoophiyaa",
-      copyright: "EduTrack Ultimate. Mirgaa hundi eeggatameera.",
+      copyright: "EduTrack Ultimate. Mirgi hunduu eegamaadha.",
     },
+    // Buttons
     buttons: {
-      getStarted: "Eegali",
-      learnMore: "Dabalata Beki",
+      getStarted: "Jalqabi",
+      learnMore: "Caalaatti Baradhu",
     },
   },
 };
