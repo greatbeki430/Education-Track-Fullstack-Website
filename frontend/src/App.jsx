@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import api from "./api";
+import HomePage from "./components/HomePage";
 import Navigation from "./components/Navigation";
 import Dashboard from "./components/Dashboard";
 import Gradebook from "./components/Gradebook";
@@ -118,131 +119,146 @@ function App() {
     delete api.defaults.headers.common["Authorization"];
   };
 
-  // If not logged in, show login page
-  if (!token || !user) {
-    return (
-      <>
-        <Login onLogin={handleLogin} />
-        <InfoModal
-          isOpen={showSessionModal}
-          onClose={() => {
-            setShowSessionModal(false);
-            window.location.href = "/login";
-          }}
-          type="warning"
-          title="Session Expired"
-          message={sessionMessage}
-        />
-      </>
-    );
-  }
-
+  // ============ CHANGE 1: WRAP EVERYTHING IN BROWSERROUTER ============
   return (
     <BrowserRouter>
-      <div className="app">
-        <Navigation user={user} onLogout={handleLogout} />
-        <div className="main-content">
+      {/* ============ CHANGE 2: SHOW HOMEPAGE WHEN NOT LOGGED IN ============ */}
+      {!token || !user ? (
+        // NOT LOGGED IN - Show HomePage and Login routes
+        <>
           <Routes>
-            {/* Dashboard - all roles */}
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute
-                  user={user}
-                  allowedRoles={["admin", "teacher", "student"]}
-                >
-                  <Dashboard user={user} />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Gradebook - admin and teacher only */}
-            <Route
-              path="/gradebook"
-              element={
-                <ProtectedRoute user={user} allowedRoles={["admin", "teacher"]}>
-                  <Gradebook />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Attendance - admin and teacher only */}
-            <Route
-              path="/attendance"
-              element={
-                <ProtectedRoute user={user} allowedRoles={["admin", "teacher"]}>
-                  <Attendance />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Exams - all roles */}
-            <Route
-              path="/exams"
-              element={
-                <ProtectedRoute
-                  user={user}
-                  allowedRoles={["admin", "teacher", "student"]}
-                >
-                  <Exams user={user} />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Take Exam - all roles */}
-            <Route
-              path="/take-exam/:id"
-              element={
-                <ProtectedRoute
-                  user={user}
-                  allowedRoles={["admin", "teacher", "student"]}
-                >
-                  <TakeExam user={user} />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Announcements - all roles */}
-            <Route
-              path="/announcements"
-              element={
-                <ProtectedRoute
-                  user={user}
-                  allowedRoles={["admin", "teacher", "student"]}
-                >
-                  <Announcements user={user} />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Student Portal - students only */}
-            <Route
-              path="/my-portal"
-              element={
-                <ProtectedRoute user={user} allowedRoles={["student"]}>
-                  <StudentPortal user={user} />
-                </ProtectedRoute>
-              }
-            />
-
+            <Route path="/" element={<HomePage />} />
+            <Route path="/login" element={<Login onLogin={handleLogin} />} />
             <Route path="/tv" element={<TVDisplay />} />
-
-            {/* Catch all */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-        </div>
-      </div>
+          <InfoModal
+            isOpen={showSessionModal}
+            onClose={() => {
+              setShowSessionModal(false);
+              window.location.href = "/login";
+            }}
+            type="warning"
+            title="Session Expired"
+            message={sessionMessage}
+          />
+        </>
+      ) : (
+        // LOGGED IN - Show protected routes
+        <>
+          <Navigation user={user} onLogout={handleLogout} />
+          <div className="main-content">
+            <Routes>
+              {/* Dashboard - all roles */}
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute
+                    user={user}
+                    allowedRoles={["admin", "teacher", "student"]}
+                  >
+                    <Dashboard user={user} />
+                  </ProtectedRoute>
+                }
+              />
 
-      <InfoModal
-        isOpen={showSessionModal}
-        onClose={() => {
-          setShowSessionModal(false);
-          window.location.href = "/login";
-        }}
-        type="warning"
-        title="Session Expired"
-        message={sessionMessage}
-      />
+              {/* Gradebook - admin and teacher only */}
+              <Route
+                path="/gradebook"
+                element={
+                  <ProtectedRoute
+                    user={user}
+                    allowedRoles={["admin", "teacher"]}
+                  >
+                    <Gradebook />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Attendance - admin and teacher only */}
+              <Route
+                path="/attendance"
+                element={
+                  <ProtectedRoute
+                    user={user}
+                    allowedRoles={["admin", "teacher"]}
+                  >
+                    <Attendance />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Exams - all roles */}
+              <Route
+                path="/exams"
+                element={
+                  <ProtectedRoute
+                    user={user}
+                    allowedRoles={["admin", "teacher", "student"]}
+                  >
+                    <Exams user={user} />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Take Exam - all roles */}
+              <Route
+                path="/take-exam/:id"
+                element={
+                  <ProtectedRoute
+                    user={user}
+                    allowedRoles={["admin", "teacher", "student"]}
+                  >
+                    <TakeExam user={user} />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Announcements - all roles */}
+              <Route
+                path="/announcements"
+                element={
+                  <ProtectedRoute
+                    user={user}
+                    allowedRoles={["admin", "teacher", "student"]}
+                  >
+                    <Announcements user={user} />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Student Portal - students only */}
+              <Route
+                path="/my-portal"
+                element={
+                  <ProtectedRoute user={user} allowedRoles={["student"]}>
+                    <StudentPortal user={user} />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* TV Display - accessible even when logged in */}
+              <Route path="/tv" element={<TVDisplay />} />
+
+              {/* Redirect /login to dashboard when already logged in */}
+              <Route path="/login" element={<Navigate to="/" replace />} />
+
+              {/* Catch all */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </div>
+          <InfoModal
+            isOpen={showSessionModal}
+            onClose={() => {
+              setShowSessionModal(false);
+              handleLogout();
+            }}
+            type="warning"
+            title="Session Expired"
+            message={sessionMessage}
+          />
+        </>
+      )}
     </BrowserRouter>
   );
 }

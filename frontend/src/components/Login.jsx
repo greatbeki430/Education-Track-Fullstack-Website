@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import api from "../api";
 import InfoModal from "./common/InfoModal";
 
@@ -43,8 +44,42 @@ export default function Login({ onLogin }) {
         alignItems: "center",
         minHeight: "100vh",
         background: "linear-gradient(135deg, #1e466e 0%, #2c7da0 100%)",
+        position: "relative",
       }}
     >
+      {/* ============ ADD BACK TO HOME BUTTON (TOP LEFT) ============ */}
+      <Link
+        to="/"
+        style={{
+          position: "absolute",
+          top: "20px",
+          left: "20px",
+          background: "rgba(255,255,255,0.2)",
+          backdropFilter: "blur(10px)",
+          color: "white",
+          textDecoration: "none",
+          padding: "0.6rem 1.2rem",
+          borderRadius: "30px",
+          display: "flex",
+          alignItems: "center",
+          gap: "0.5rem",
+          fontSize: "0.9rem",
+          fontWeight: "500",
+          transition: "all 0.3s ease",
+          border: "1px solid rgba(255,255,255,0.3)",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = "rgba(255,255,255,0.3)";
+          e.currentTarget.style.transform = "translateX(-5px)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = "rgba(255,255,255,0.2)";
+          e.currentTarget.style.transform = "translateX(0)";
+        }}
+      >
+        <span style={{ fontSize: "1.2rem" }}>←</span> Back to Home
+      </Link>
+
       <div
         className="login-card"
         style={{
@@ -61,7 +96,7 @@ export default function Login({ onLogin }) {
           <h1 style={{ color: "#1e466e", marginBottom: "0.5rem" }}>
             📚 EduTrack Ultimate
           </h1>
-          <p style={{ color: "#666" }}>Meskerem Secondary School - Grade 11</p>
+          <p style={{ color: "#666" }}>Meskerem Secondary School Communities</p>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -223,6 +258,34 @@ export default function Login({ onLogin }) {
             📝 Username: <strong>admin</strong> | Password:{" "}
             <strong>admin123</strong>
           </p>
+        </div>
+
+        {/* ============ ADD BACK TO HOME LINK AT BOTTOM (OPTIONAL) ============ */}
+        <div
+          style={{
+            marginTop: "1rem",
+            textAlign: "center",
+            borderTop: "1px solid #eee",
+            paddingTop: "1rem",
+          }}
+        >
+          <Link
+            to="/"
+            style={{
+              color: "#2c7da0",
+              textDecoration: "none",
+              fontSize: "0.85rem",
+              transition: "color 0.3s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = "#ffb74d";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = "#2c7da0";
+            }}
+          >
+            ← Return to Homepage
+          </Link>
         </div>
       </div>
 
