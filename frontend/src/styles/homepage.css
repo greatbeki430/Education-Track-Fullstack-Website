@@ -8,7 +8,10 @@
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* Navigation Bar */
+/* ============================================
+   NAVIGATION BAR - DESKTOP & RESPONSIVE
+   ============================================ */
+
 .home-nav {
   position: fixed;
   top: 0;
@@ -19,12 +22,108 @@
   transition: all 0.3s ease;
   background: transparent;
 }
-/* Language Selector Styles */
+
+.home-nav.scrolled {
+  background: rgba(30, 70, 110, 0.95);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+  padding: 0.8rem 2rem;
+}
+
+.nav-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Logo */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: white;
+}
+
+.logo-icon {
+  font-size: 1.8rem;
+}
+
+.logo-text {
+  font-size: 1.3rem;
+}
+
+.logo-highlight {
+  color: #ffb74d;
+}
+
+/* Desktop Navigation Links */
+.nav-links {
+  display: flex;
+  gap: 2rem;
+}
+
+.nav-links a {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s;
+  position: relative;
+}
+
+.nav-links a:hover {
+  color: #ffb74d;
+}
+
+.nav-links a::after {
+  content: "";
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: #ffb74d;
+  transition: width 0.3s;
+}
+
+.nav-links a:hover::after {
+  width: 100%;
+}
+
+/* Right Side Navigation Items */
 .nav-right {
   display: flex;
   align-items: center;
   gap: 1rem;
 }
+
+/* Login Button */
+.login-btn {
+  background: #ffb74d;
+  border: none;
+  padding: 0.6rem 1.5rem;
+  border-radius: 30px;
+  color: #1e466e;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s;
+}
+
+.login-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 183, 77, 0.3);
+}
+
+/* ============================================
+   LANGUAGE SELECTOR
+   ============================================ */
 
 .language-selector {
   position: relative;
@@ -47,6 +146,11 @@
 .lang-btn:hover {
   background: rgba(255, 255, 255, 0.25);
   transform: translateY(-2px);
+}
+
+.lang-arrow {
+  font-size: 0.7rem;
+  opacity: 0.8;
 }
 
 .lang-dropdown {
@@ -99,109 +203,154 @@
   color: #2c7da0;
 }
 
-@media (max-width: 768px) {
-  .lang-name {
-    display: none;
-  }
+/* ============================================
+   MOBILE MENU TOGGLE BUTTON
+   ============================================ */
 
-  .lang-btn {
-    padding: 0.5rem 0.8rem;
-  }
-
-  .nav-right {
-    gap: 0.5rem;
-  }
-}
-
-.home-nav.scrolled {
-  background: rgba(30, 70, 110, 0.95);
-  -webkit-backdrop-filter: blur(10px); /* Safari/iOS support */
-  backdrop-filter: blur(10px);
-  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
-  padding: 0.8rem 2rem;
-}
-
-.nav-container {
-  max-width: 1400px;
-  margin: 0 auto;
-  display: flex;
+.mobile-menu-toggle {
+  display: none;
+  flex-direction: column;
   justify-content: space-between;
-  align-items: center;
+  width: 30px;
+  height: 22px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  z-index: 1001;
 }
 
-.logo {
+.mobile-menu-toggle span {
+  width: 100%;
+  height: 3px;
+  background: white;
+  border-radius: 3px;
+  transition: all 0.3s ease;
+}
+
+.mobile-menu-toggle.active span:nth-child(1) {
+  transform: translateY(9px) rotate(45deg);
+}
+
+.mobile-menu-toggle.active span:nth-child(2) {
+  opacity: 0;
+}
+
+.mobile-menu-toggle.active span:nth-child(3) {
+  transform: translateY(-9px) rotate(-45deg);
+}
+
+/* ============================================
+   MOBILE NAVIGATION MENU (SLIDE-IN PANEL)
+   ============================================ */
+
+.mobile-nav-menu {
+  position: fixed;
+  top: 0;
+  right: -100%;
+  width: 80%;
+  max-width: 350px;
+  height: 100vh;
+  background: linear-gradient(135deg, #1e466e 0%, #2c7da0 100%);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  z-index: 999;
+  transition: right 0.3s ease;
+  padding-top: 80px;
+  box-shadow: -5px 0 20px rgba(0, 0, 0, 0.2);
+}
+
+.mobile-nav-menu.open {
+  right: 0;
+}
+
+.mobile-nav-links {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  padding: 1rem;
   gap: 0.5rem;
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: white;
 }
 
-.logo-icon {
-  font-size: 1.8rem;
-}
-
-.logo-text {
-  font-size: 1.3rem;
-}
-
-.logo-highlight {
-  color: #ffb74d;
-}
-
-.nav-links {
+.mobile-nav-links a,
+.mobile-login-btn {
   display: flex;
-  gap: 2rem;
-}
-
-.nav-links a {
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
   color: white;
   text-decoration: none;
+  font-size: 1.1rem;
   font-weight: 500;
-  transition: color 0.3s;
-  position: relative;
-}
-
-.nav-links a:hover {
-  color: #ffb74d;
-}
-
-.nav-links a::after {
-  content: "";
-  position: absolute;
-  bottom: -5px;
-  left: 0;
-  width: 0;
-  height: 2px;
-  background: #ffb74d;
-  transition: width 0.3s;
-}
-
-.nav-links a:hover::after {
-  width: 100%;
-}
-
-.login-btn {
-  background: #ffb74d;
-  border: none;
-  padding: 0.6rem 1.5rem;
-  border-radius: 30px;
-  color: #1e466e;
-  font-weight: bold;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  border-radius: 12px;
   transition: all 0.3s;
 }
 
-.login-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(255, 183, 77, 0.3);
+.mobile-nav-links a:hover,
+.mobile-login-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateX(5px);
 }
 
-/* Hero Section */
+.mobile-login-btn {
+  background: #ffb74d;
+  color: #1e466e;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  margin-top: 1rem;
+}
+
+.mobile-login-btn:hover {
+  background: #ffa726;
+}
+
+.mobile-language-section {
+  margin-top: 2rem;
+  padding: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.mobile-language-label {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.8rem;
+  margin-bottom: 0.8rem;
+}
+
+.mobile-language-options {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.mobile-lang-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0.6rem 1rem;
+  border-radius: 30px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-size: 0.9rem;
+}
+
+.mobile-lang-option:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.mobile-lang-option.active {
+  background: #ffb74d;
+  color: #1e466e;
+  border-color: #ffb74d;
+}
+
+/* ============================================
+   HERO SECTION
+   ============================================ */
+
 .hero-section {
   position: relative;
   height: 100vh;
@@ -234,6 +383,7 @@
   padding: 2rem;
 }
 
+/* Carousel */
 .carousel-container {
   position: relative;
   overflow: hidden;
@@ -323,6 +473,7 @@
   background: #ffb74d;
 }
 
+/* Hero Buttons */
 .hero-buttons {
   display: flex;
   gap: 1.5rem;
@@ -391,14 +542,16 @@
   fill: #f0f2f5;
 }
 
-/* Container */
+/* ============================================
+   COMMON CONTAINER & SECTION HEADER
+   ============================================ */
+
 .container {
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 2rem;
 }
 
-/* Section Header */
 .section-header {
   text-align: center;
   margin-bottom: 3rem;
@@ -426,7 +579,10 @@
   color: #666;
 }
 
-/* Features Section */
+/* ============================================
+   FEATURES SECTION
+   ============================================ */
+
 .features-section {
   padding: 5rem 0;
   background: #f0f2f5;
@@ -479,7 +635,10 @@
   line-height: 1.6;
 }
 
-/* Stats Section */
+/* ============================================
+   STATS SECTION
+   ============================================ */
+
 .stats-section {
   padding: 5rem 0;
   background: linear-gradient(135deg, #1e466e 0%, #2c7da0 100%);
@@ -513,13 +672,10 @@
   opacity: 0.9;
 }
 
-@media (max-width: 768px) {
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
+/* ============================================
+   HOW IT WORKS SECTION
+   ============================================ */
 
-/* How It Works Section */
 .how-it-works-section {
   padding: 5rem 0;
   background: white;
@@ -585,13 +741,10 @@
   color: #2c7da0;
 }
 
-@media (max-width: 900px) {
-  .step-arrow {
-    display: none;
-  }
-}
+/* ============================================
+   TESTIMONIALS SECTION
+   ============================================ */
 
-/* Testimonials Section */
 .testimonials-section {
   padding: 5rem 0;
   background: #f0f2f5;
@@ -656,7 +809,10 @@
   color: #666;
 }
 
-/* CTA Section */
+/* ============================================
+   CTA SECTION
+   ============================================ */
+
 .cta-section {
   padding: 5rem 0;
   background: linear-gradient(135deg, #1e466e 0%, #2c7da0 100%);
@@ -698,7 +854,10 @@
   box-shadow: 0 10px 30px rgba(255, 183, 77, 0.4);
 }
 
-/* Footer */
+/* ============================================
+   FOOTER
+   ============================================ */
+
 .footer {
   background: #0f172a;
   color: #94a3b8;
@@ -753,23 +912,56 @@
   font-size: 0.8rem;
 }
 
-@media (max-width: 768px) {
-  .footer-content {
-    flex-direction: column;
-    text-align: center;
-  }
+/* ============================================
+   RESPONSIVE BREAKPOINTS
+   ============================================ */
 
-  .footer-info {
-    text-align: center;
+/* Tablet and Desktop (769px and above) */
+@media (min-width: 769px) {
+  .mobile-nav-menu {
+    display: none;
   }
 }
 
-/* Responsive Design */
+/* Mobile (768px and below) */
 @media (max-width: 768px) {
+  /* Hide desktop navigation */
   .nav-links {
     display: none;
   }
 
+  /* Show mobile toggle */
+  .mobile-menu-toggle {
+    display: flex;
+  }
+
+  /* Adjust navigation spacing */
+  .home-nav {
+    padding: 1rem;
+  }
+
+  .home-nav.scrolled {
+    padding: 0.8rem 1rem;
+  }
+
+  .nav-container {
+    padding: 0;
+  }
+
+  /* Hide language name on mobile */
+  .lang-name {
+    display: none;
+  }
+
+  .lang-btn {
+    padding: 0.5rem 0.8rem;
+  }
+
+  .nav-right {
+    gap: 0.5rem;
+  }
+
+  /* Hero section adjustments */
   .slide-title {
     font-size: 2rem;
   }
@@ -787,22 +979,30 @@
     align-items: center;
   }
 
+  /* Section header adjustments */
   .section-header h2 {
     font-size: 1.8rem;
   }
 
+  .section-header p {
+    font-size: 0.9rem;
+  }
+
+  /* Grid adjustments */
   .features-grid {
     grid-template-columns: 1fr;
   }
 
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
   }
 
   .testimonials-grid {
     grid-template-columns: 1fr;
   }
 
+  /* Steps container adjustments */
   .steps-container {
     flex-direction: column;
   }
@@ -810,9 +1010,204 @@
   .step {
     width: 100%;
   }
+
+  .step-arrow {
+    display: none;
+  }
+
+  /* Stats cards adjustments */
+  .stat-card {
+    padding: 1rem;
+  }
+
+  .stat-icon {
+    font-size: 2rem;
+  }
+
+  .stat-number {
+    font-size: 2rem;
+  }
+
+  .stat-label {
+    font-size: 0.8rem;
+  }
+
+  /* CTA section adjustments */
+  .cta-content h2 {
+    font-size: 1.5rem;
+  }
+
+  .cta-content p {
+    font-size: 0.9rem;
+  }
+
+  .cta-btn {
+    padding: 0.8rem 1.5rem;
+    font-size: 1rem;
+  }
+
+  /* Footer adjustments */
+  .footer-content {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .footer-info {
+    text-align: center;
+  }
+
+  .footer-links {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+  }
+
+  .container {
+    padding: 0 1rem;
+  }
 }
 
-/* Animations */
+/* Small Mobile (480px and below) */
+@media (max-width: 480px) {
+  .logo-text {
+    font-size: 1rem;
+  }
+
+  .logo-icon {
+    font-size: 1.4rem;
+  }
+
+  /* Hide text on login button, show only icon */
+  .login-btn span:first-child {
+    display: inline;
+  }
+
+  .login-btn span:last-child {
+    display: none;
+  }
+
+  .login-btn {
+    padding: 0.5rem 0.8rem;
+  }
+
+  .mobile-nav-menu {
+    width: 85%;
+  }
+
+  .slide-title {
+    font-size: 1.5rem;
+  }
+
+  .slide-icon {
+    font-size: 3rem;
+  }
+
+  .carousel-dots {
+    gap: 0.5rem;
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+  }
+
+  .dot.active {
+    width: 20px;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.8rem;
+  }
+
+  .stat-number {
+    font-size: 1.5rem;
+  }
+
+  .feature-card {
+    padding: 1.5rem;
+  }
+
+  .feature-icon {
+    width: 60px;
+    height: 60px;
+    font-size: 2rem;
+  }
+
+  .testimonial-card {
+    padding: 1.5rem;
+  }
+
+  .testimonial-quote {
+    font-size: 3rem;
+  }
+}
+
+/* Tablet Portrait (769px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .nav-links {
+    gap: 1rem;
+  }
+
+  .nav-links a {
+    font-size: 0.9rem;
+  }
+
+  .lang-name {
+    display: inline;
+  }
+
+  .slide-title {
+    font-size: 2.5rem;
+  }
+
+  .stats-grid {
+    gap: 1rem;
+  }
+
+  .stat-number {
+    font-size: 2.5rem;
+  }
+
+  .features-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Landscape Mode for Mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+  .hero-section {
+    min-height: 500px;
+  }
+
+  .slide-title {
+    font-size: 1.5rem;
+  }
+
+  .slide-subtitle {
+    font-size: 0.9rem;
+  }
+
+  .slide-description {
+    font-size: 0.8rem;
+  }
+
+  .hero-buttons {
+    flex-direction: row;
+    gap: 1rem;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
 @keyframes float {
   0%,
   100% {
@@ -830,5 +1225,65 @@
   }
   50% {
     transform: scale(1.05);
+  }
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+.text-center {
+  text-align: center;
+}
+
+.mt-1 {
+  margin-top: 0.5rem;
+}
+.mt-2 {
+  margin-top: 1rem;
+}
+.mt-3 {
+  margin-top: 1.5rem;
+}
+.mt-4 {
+  margin-top: 2rem;
+}
+.mt-5 {
+  margin-top: 3rem;
+}
+
+.mb-1 {
+  margin-bottom: 0.5rem;
+}
+.mb-2 {
+  margin-bottom: 1rem;
+}
+.mb-3 {
+  margin-bottom: 1.5rem;
+}
+.mb-4 {
+  margin-bottom: 2rem;
+}
+.mb-5 {
+  margin-bottom: 3rem;
+}
+
+.hidden-mobile {
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .hidden-mobile {
+    display: none;
+  }
+}
+
+.hidden-desktop {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .hidden-desktop {
+    display: block;
   }
 }

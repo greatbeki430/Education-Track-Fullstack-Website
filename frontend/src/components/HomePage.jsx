@@ -7,7 +7,8 @@ export default function HomePage() {
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [scrolled, setScrolled] = useState(false);
-  const [language, setLanguage] = useState("en"); // 'en', 'am', 'om'
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [language, setLanguage] = useState("en");
 
   // Get current language translations
   const t = translations[language];
@@ -46,6 +47,7 @@ export default function HomePage() {
   const changeLanguage = (langCode) => {
     setLanguage(langCode);
     localStorage.setItem("preferredLanguage", langCode);
+    setMobileMenuOpen(false);
   };
 
   useEffect(() => {
@@ -55,6 +57,17 @@ export default function HomePage() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Close mobile menu on window resize (if screen becomes larger)
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 768 && mobileMenuOpen) {
+        setMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [mobileMenuOpen]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -104,10 +117,19 @@ export default function HomePage() {
 
   const handleLogin = () => {
     navigate("/login");
+    setMobileMenuOpen(false);
+  };
+
+  const scrollToSection = (sectionId) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+    }
+    setMobileMenuOpen(false);
   };
 
   return (
-    <div className="homepage" dir={language === "am" ? "ltr" : "ltr"}>
+    <div className="homepage">
       {/* Navigation Bar */}
       <nav className={`home-nav ${scrolled ? "scrolled" : ""}`}>
         <div className="nav-container">
@@ -117,11 +139,38 @@ export default function HomePage() {
               EduTrack<span className="logo-highlight">Ultimate</span>
             </span>
           </div>
+
+          {/* Desktop Navigation */}
           <div className="nav-links">
-            <a href="#features">{t.nav.features}</a>
-            <a href="#how-it-works">{t.nav.howItWorks}</a>
-            <a href="#stats">{t.nav.impact}</a>
+            <a
+              href="#features"
+              onClick={(e) => {
+                e.preventDefault();
+                scrollToSection("features");
+              }}
+            >
+              {t.nav.features}
+            </a>
+            <a
+              href="#how-it-works"
+              onClick={(e) => {
+                e.preventDefault();
+                scrollToSection("how-it-works");
+              }}
+            >
+              {t.nav.howItWorks}
+            </a>
+            <a
+              href="#stats"
+              onClick={(e) => {
+                e.preventDefault();
+                scrollToSection("stats");
+              }}
+            >
+              {t.nav.impact}
+            </a>
           </div>
+
           <div className="nav-right">
             {/* Language Selector */}
             <div className="language-selector">
@@ -130,6 +179,7 @@ export default function HomePage() {
                 <span className="lang-name">
                   {languages.find((l) => l.code === language)?.name}
                 </span>
+                <span className="lang-arrow">▼</span>
               </button>
               <div className="lang-dropdown">
                 {languages.map((lang) => (
@@ -144,14 +194,77 @@ export default function HomePage() {
                 ))}
               </div>
             </div>
+
             <button onClick={handleLogin} className="login-btn">
               <span>🔐</span> {t.nav.login}
             </button>
+
+            {/* Mobile Menu Toggle */}
+            <button
+              className={`mobile-menu-toggle ${mobileMenuOpen ? "active" : ""}`}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              <span></span>
+              <span></span>
+              <span></span>
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Navigation Menu */}
+        <div className={`mobile-nav-menu ${mobileMenuOpen ? "open" : ""}`}>
+          <div className="mobile-nav-links">
+            <a
+              href="#features"
+              onClick={(e) => {
+                e.preventDefault();
+                scrollToSection("features");
+              }}
+            >
+              <span>📊</span> {t.nav.features}
+            </a>
+            <a
+              href="#how-it-works"
+              onClick={(e) => {
+                e.preventDefault();
+                scrollToSection("how-it-works");
+              }}
+            >
+              <span>⚙️</span> {t.nav.howItWorks}
+            </a>
+            <a
+              href="#stats"
+              onClick={(e) => {
+                e.preventDefault();
+                scrollToSection("stats");
+              }}
+            >
+              <span>📈</span> {t.nav.impact}
+            </a>
+            <button onClick={handleLogin} className="mobile-login-btn">
+              <span>🔐</span> {t.nav.login}
+            </button>
+            <div className="mobile-language-section">
+              <p className="mobile-language-label">
+                🌐 Language / ቋንቋ / Afaan:
+              </p>
+              <div className="mobile-language-options">
+                {languages.map((lang) => (
+                  <button
+                    key={lang.code}
+                    className={`mobile-lang-option ${language === lang.code ? "active" : ""}`}
+                    onClick={() => changeLanguage(lang.code)}
+                  >
+                    <span>{lang.flag}</span>
+                    <span>{lang.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </nav>
 
-      {/* Rest of the component uses the translated content... */}
       {/* Hero Section with Carousel */}
       <section className="hero-section">
         <div className="hero-overlay"></div>
@@ -184,7 +297,14 @@ export default function HomePage() {
             <button onClick={handleLogin} className="btn-primary">
               {t.buttons.getStarted} <span>→</span>
             </button>
-            <a href="#features" className="btn-secondary">
+            <a
+              href="#features"
+              className="btn-secondary"
+              onClick={(e) => {
+                e.preventDefault();
+                scrollToSection("features");
+              }}
+            >
               {t.buttons.learnMore} <span>↓</span>
             </a>
           </div>
@@ -340,14 +460,38 @@ export default function HomePage() {
               <span>EduTrack Ultimate</span>
             </div>
             <div className="footer-links">
-              <a href="#features">{t.nav.features}</a>
-              <a href="#how-it-works">{t.nav.howItWorks}</a>
-              <a href="#stats">{t.nav.impact}</a>
+              <a
+                href="#features"
+                onClick={(e) => {
+                  e.preventDefault();
+                  scrollToSection("features");
+                }}
+              >
+                {t.nav.features}
+              </a>
+              <a
+                href="#how-it-works"
+                onClick={(e) => {
+                  e.preventDefault();
+                  scrollToSection("how-it-works");
+                }}
+              >
+                {t.nav.howItWorks}
+              </a>
+              <a
+                href="#stats"
+                onClick={(e) => {
+                  e.preventDefault();
+                  scrollToSection("stats");
+                }}
+              >
+                {t.nav.impact}
+              </a>
               <a
                 href="#"
                 onClick={(e) => {
                   e.preventDefault();
-                  navigate("/login");
+                  handleLogin();
                 }}
               >
                 {t.nav.login}
@@ -363,92 +507,6 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
-
-      <style>{`
-        /* Language Selector Styles */
-        .nav-right {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-        }
-
-        .language-selector {
-          position: relative;
-        }
-
-        .lang-btn {
-          background: rgba(255, 255, 255, 0.15);
-          border: 1px solid rgba(255, 255, 255, 0.3);
-          padding: 0.5rem 1rem;
-          border-radius: 30px;
-          color: white;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          font-size: 0.9rem;
-          transition: all 0.3s;
-        }
-
-        .lang-btn:hover {
-          background: rgba(255, 255, 255, 0.25);
-        }
-
-        .lang-dropdown {
-          position: absolute;
-          top: 100%;
-          right: 0;
-          margin-top: 0.5rem;
-          background: white;
-          border-radius: 12px;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-          overflow: hidden;
-          min-width: 140px;
-          display: none;
-          z-index: 1000;
-        }
-
-        .language-selector:hover .lang-dropdown {
-          display: block;
-        }
-
-        .lang-option {
-          display: flex;
-          align-items: center;
-          gap: 0.8rem;
-          width: 100%;
-          padding: 0.7rem 1rem;
-          border: none;
-          background: white;
-          cursor: pointer;
-          transition: background 0.2s;
-          text-align: left;
-          font-size: 0.9rem;
-        }
-
-        .lang-option:hover {
-          background: #f0f2f5;
-        }
-
-        .lang-option.active {
-          background: #e1f0f7;
-          color: #2c7da0;
-        }
-
-        @media (max-width: 768px) {
-          .lang-name {
-            display: none;
-          }
-          
-          .lang-btn {
-            padding: 0.5rem;
-          }
-          
-          .nav-right {
-            gap: 0.5rem;
-          }
-        }
-      `}</style>
     </div>
   );
 }
