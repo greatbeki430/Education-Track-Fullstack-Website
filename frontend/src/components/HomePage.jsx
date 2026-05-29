@@ -31,7 +31,7 @@ export default function HomePage() {
 
   // Language options
   const languages = [
-    { code: "en", name: "English", flag: "🇬🇧", label: "English" },
+    { code: "en", name: "English", flag: "EN", label: "English" },
     { code: "am", name: "አማርኛ", flag: "🇪🇹", label: "አማርኛ" },
     { code: "om", name: "Oromo", flag: "🇪🇹", label: "Afaan Oromo" },
   ];
