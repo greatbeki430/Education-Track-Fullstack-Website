@@ -1,0 +1,27 @@
+# Create the file with your message
+cat > commit-message.txt << 'EOF'
+feat: Major EduTrack System Enhancement - AI Integration, Modular Architecture, and Professional UI
+
+🚀 New Features:
+- Integrated Google Gemini AI for dynamic question generation
+- Added modular file extraction services (PDF, DOCX, TXT)
+- Built modular TakeExam component with sidebar navigation
+- Replaced all alerts with professional modals
+- Added password visibility toggle
+- Implemented auto-logout on token expiration
+- Added confetti celebration effects
+
+🐛 Bug Fixes:
+- Fixed PDF parsing issues
+- Corrected API endpoint paths
+- Fixed database schema columns
+- Resolved CORS issues
+
+📁 Structure:
+- Reorganized components into modular architecture
+- Added utility functions and custom hooks
+- Created separate service layer
+
+Then commit using:
+git commit -F commit-message.txt
+git push origin main
