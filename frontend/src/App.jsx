@@ -13,7 +13,7 @@ import StudentPortal from "./components/StudentPortal";
 import Login from "./components/Login";
 import TVDisplay from "./components/TVDisplay";
 import InfoModal from "./components/common/InfoModal";
-import Favicon from "./components/Common/Favicon";
+import Favicon from "./components/common/Favicon";
 import "./styles/index.css";
 
 // Protected Route Component
