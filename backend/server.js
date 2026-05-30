@@ -12,32 +12,45 @@ import bcrypt from "bcryptjs";
 // Load environment variables
 dotenv.config();
 
-// Route imports
-import authRouter from "./routes/auth.js";
-import scoresRouter from "./routes/scores.js";
-import attendanceRouter from "./routes/attendance.js";
-import examsRouter from "./routes/exams.js";
-import announcementsRouter from "./routes/announcements.js";
-import aiRouter from "./routes/ai.js";
-
-// Middleware imports
-import { requireAuthCookie } from "./middleware/requireAuthCookie.js";
-import { requireRole } from "./middleware/requireRole.js";
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Initialize database
-export let db;
+// ====================== CORS CONFIG ======================
+app.use(
+  cors({
+    origin:
+      process.env.NODE_ENV === "production"
+        ? ["https://your-vercel-domain.vercel.app"] // ← CHANGE TO YOUR VERCEL URL
+        : "http://localhost:5173",
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
 
-// Add this near the top of your server.js
+// ====================== MIDDLEWARE ======================
+app.use(express.json());
+app.use(cookieParser());
+
+// ====================== PRODUCTION: SERVE FRONTEND ======================
+if (process.env.NODE_ENV === "production") {
+  const frontendPath = path.join(__dirname, "../frontend/dist");
+  app.use(express.static(frontendPath));
+
+  app.get("*", (req, res) => {
+    if (!req.path.startsWith("/api")) {
+      res.sendFile(path.join(frontendPath, "index.html"));
+    }
+  });
+}
+
+// ====================== CONSOLE FILTER ======================
 const originalConsoleWarn = console.warn;
 console.warn = function (...args) {
   const message = args.join(" ");
-  // Filter out pdf2json warnings
   if (
     message.includes("Warning: Setting up fake worker") ||
     message.includes("Warning: TODO: graphic state operator") ||
@@ -48,6 +61,17 @@ console.warn = function (...args) {
   }
   originalConsoleWarn.apply(console, args);
 };
+
+// ====================== ROUTE IMPORTS ======================
+import authRouter from "./routes/auth.js";
+import scoresRouter from "./routes/scores.js";
+import attendanceRouter from "./routes/attendance.js";
+import examsRouter from "./routes/exams.js";
+import announcementsRouter from "./routes/announcements.js";
+import aiRouter from "./routes/ai.js";
+
+// ====================== DATABASE SETUP ======================
+export let db;
 
 async function initDB() {
   db = await open({
@@ -97,8 +121,9 @@ async function initDB() {
       duration INTEGER,
       createdBy TEXT,
       date DATETIME DEFAULT CURRENT_TIMESTAMP
-   );
-   CREATE TABLE IF NOT EXISTS exam_attempts (
+    );
+
+    CREATE TABLE IF NOT EXISTS exam_attempts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       examId INTEGER,
       studentId TEXT,
@@ -120,12 +145,11 @@ async function initDB() {
     );
   `);
 
-  // Insert sample admin if not exists
+  // Insert default admin if not exists
   const adminExists = await db.get(
     "SELECT * FROM users WHERE username = 'admin'",
   );
   if (!adminExists) {
-    // bcrypt is already imported at the top
     const hashedPassword = await bcrypt.hash("admin123", 10);
     await db.run(
       "INSERT INTO users (username, password, role, fullName) VALUES (?, ?, ?, ?)",
@@ -139,40 +163,13 @@ async function initDB() {
   }
 }
 
-// Middleware
-app.use(
-  cors({
-    origin: "http://localhost:5173", // Your Vite frontend URL
-    credentials: true, // Required for cookies
-  }),
-);
-app.use(express.json());
-app.use(cookieParser());
-
-// Create uploads directory if needed
-const uploadDir = process.env.UPLOAD_DIR || "uploads";
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
-  console.log(`📁 Created uploads directory: ${uploadDir}`);
-}
-
-// Routes
+// ====================== ROUTES ======================
 app.use("/api/auth", authRouter);
-app.use("/api/scores", requireAuthCookie, scoresRouter);
-app.use("/api/attendance", requireAuthCookie, attendanceRouter);
-app.use("/api/exams", requireAuthCookie, examsRouter);
-app.use(
-  "/api/announcements",
-  requireAuthCookie,
-  requireRole(["teacher", "admin"]),
-  announcementsRouter,
-);
-app.use(
-  "/api/ai",
-  requireAuthCookie,
-  requireRole(["teacher", "admin"]),
-  aiRouter,
-);
+app.use("/api/scores", scoresRouter);
+app.use("/api/attendance", attendanceRouter);
+app.use("/api/exams", examsRouter);
+app.use("/api/announcements", announcementsRouter);
+app.use("/api/ai", aiRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -180,7 +177,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "Something went wrong!" });
 });
 
-// Start server
+// ====================== START SERVER ======================
 async function startServer() {
   try {
     await initDB();
@@ -188,9 +185,6 @@ async function startServer() {
       console.log(`\n🚀 Server running on http://localhost:${PORT}`);
       console.log(`📁 Environment: ${process.env.NODE_ENV || "development"}`);
       console.log(`🍪 Cookie authentication: ENABLED`);
-      console.log(
-        `🤖 Gemini AI: ${process.env.GEMINI_API_KEY ? "✅ Configured" : "❌ Not configured"}`,
-      );
       console.log(`\n📝 Default login: admin / admin123\n`);
     });
   } catch (error) {
