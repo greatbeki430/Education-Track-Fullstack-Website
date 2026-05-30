@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../api";
 import InfoModal from "./common/InfoModal";
+import "../styles/index.css";
 
 export default function Login({ onLogin }) {
   const [username, setUsername] = useState("");
