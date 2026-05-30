@@ -35,7 +35,7 @@ function App() {
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [sessionMessage, setSessionMessage] = useState("");
 
-  // Set up axios interceptor for authentication
+  // Set up axios interceptor
   useEffect(() => {
     if (token) {
       api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
@@ -44,27 +44,22 @@ function App() {
     }
   }, [token]);
 
-  // Add this useEffect in App component
+  // ==================== SESSION CHECK ====================
   useEffect(() => {
     const checkSession = async () => {
-      if (token) {
-        try {
-          await api.get("/api/auth/me");
-        } catch (error) {
-          if (error.response?.status === 401) {
-            // Token expired
-            setSessionMessage("Your session has expired. Please login again.");
-            setShowSessionModal(true);
-            setToken(null);
-            setUser(null);
-            localStorage.removeItem("token");
-            localStorage.removeItem("user");
-          }
+      if (!token) return; // ← Fixed: Skip if no token
+
+      try {
+        await api.get("/api/auth/me");
+      } catch (error) {
+        if (error.response?.status === 401) {
+          setSessionMessage("Your session has expired. Please login again.");
+          setShowSessionModal(true);
+          handleLogout(); // Clear invalid session
         }
       }
     };
 
-    // Check session when page becomes visible again
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
         checkSession();
@@ -72,8 +67,6 @@ function App() {
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    // Periodic session check every 5 minutes
     const interval = setInterval(checkSession, 5 * 60 * 1000);
 
     return () => {
@@ -89,12 +82,7 @@ function App() {
         event.detail.message || "Your session has expired. Please login again.",
       );
       setShowSessionModal(true);
-      // Clear state
-      setToken(null);
-      setUser(null);
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      delete api.defaults.headers.common["Authorization"];
+      handleLogout();
     };
 
     window.addEventListener("auth:token-expired", handleTokenExpired);
@@ -120,13 +108,12 @@ function App() {
     delete api.defaults.headers.common["Authorization"];
   };
 
-  // ============ CHANGE 1: WRAP EVERYTHING IN BROWSERROUTER ============
   return (
     <BrowserRouter>
       <Favicon emoji="📚" />
-      {/* ============ CHANGE 2: SHOW HOMEPAGE WHEN NOT LOGGED IN ============ */}
+
       {!token || !user ? (
-        // NOT LOGGED IN - Show HomePage and Login routes
+        // ==================== NOT LOGGED IN ====================
         <>
           <Routes>
             <Route path="/" element={<HomePage />} />
@@ -134,6 +121,7 @@ function App() {
             <Route path="/tv" element={<TVDisplay />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+
           <InfoModal
             isOpen={showSessionModal}
             onClose={() => {
@@ -146,12 +134,11 @@ function App() {
           />
         </>
       ) : (
-        // LOGGED IN - Show protected routes
+        // ==================== LOGGED IN ====================
         <>
           <Navigation user={user} onLogout={handleLogout} />
           <div className="main-content">
             <Routes>
-              {/* Dashboard - all roles */}
               <Route
                 path="/"
                 element={
@@ -164,7 +151,6 @@ function App() {
                 }
               />
 
-              {/* Gradebook - admin and teacher only */}
               <Route
                 path="/gradebook"
                 element={
@@ -177,7 +163,6 @@ function App() {
                 }
               />
 
-              {/* Attendance - admin and teacher only */}
               <Route
                 path="/attendance"
                 element={
@@ -190,7 +175,6 @@ function App() {
                 }
               />
 
-              {/* Exams - all roles */}
               <Route
                 path="/exams"
                 element={
@@ -203,7 +187,6 @@ function App() {
                 }
               />
 
-              {/* Take Exam - all roles */}
               <Route
                 path="/take-exam/:id"
                 element={
@@ -216,7 +199,6 @@ function App() {
                 }
               />
 
-              {/* Announcements - all roles */}
               <Route
                 path="/announcements"
                 element={
@@ -229,7 +211,6 @@ function App() {
                 }
               />
 
-              {/* Student Portal - students only */}
               <Route
                 path="/my-portal"
                 element={
@@ -239,16 +220,12 @@ function App() {
                 }
               />
 
-              {/* TV Display - accessible even when logged in */}
               <Route path="/tv" element={<TVDisplay />} />
-
-              {/* Redirect /login to dashboard when already logged in */}
               <Route path="/login" element={<Navigate to="/" replace />} />
-
-              {/* Catch all */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
+
           <InfoModal
             isOpen={showSessionModal}
             onClose={() => {
