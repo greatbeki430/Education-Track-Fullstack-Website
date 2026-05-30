@@ -134,19 +134,19 @@ export const translations = {
       items: [
         {
           text: "This system has saved me hours of manual grade calculation. The AI exam generator is a game-changer!",
-          author: "Abebe Kebede",
-          role: "ICT Teacher, Grade 11",
+          author: "Jiregna Gebeyo",
+          role: "Accounting and Finance Teacher, Grade 11",
           avatar: "👩‍🏫",
         },
         {
           text: "The TV announcement feature is brilliant. Teachers never miss important updates during lunch hours.",
-          author: "Bekele Alemu",
-          role: "Head Teacher",
+          author: "Bikila Dejene",
+          role: "General Record Office Head",
           avatar: "👨‍🏫",
         },
         {
           text: "Students love being able to check their grades and attendance anytime through the student portal.",
-          author: "Chaltu Mohammed",
+          author: "Bereket Abadir",
           role: "Grade 11 Student",
           avatar: "👩‍🎓",
         },

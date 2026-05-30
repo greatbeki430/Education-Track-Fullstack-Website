@@ -13,6 +13,7 @@ import StudentPortal from "./components/StudentPortal";
 import Login from "./components/Login";
 import TVDisplay from "./components/TVDisplay";
 import InfoModal from "./components/common/InfoModal";
+import Favicon from "./components/Common/Favicon";
 import "./styles/index.css";
 
 // Protected Route Component
@@ -122,6 +123,7 @@ function App() {
   // ============ CHANGE 1: WRAP EVERYTHING IN BROWSERROUTER ============
   return (
     <BrowserRouter>
+      <Favicon emoji="📚" />
       {/* ============ CHANGE 2: SHOW HOMEPAGE WHEN NOT LOGGED IN ============ */}
       {!token || !user ? (
         // NOT LOGGED IN - Show HomePage and Login routes
