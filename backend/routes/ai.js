@@ -171,6 +171,8 @@ async function callGemini(prompt, maxOutputTokens = 4096) {
 
 // ─── Question Generator ───────────────────────────────────────────────────────
 
+// Replace the generateQuestionsWithGemini function in ai.js
+
 async function generateQuestionsWithGemini({
   content,
   topic,
@@ -178,6 +180,7 @@ async function generateQuestionsWithGemini({
   gradeLevel,
   difficulty,
   questionTypes,
+  typeBreakdown, // NEW parameter
   customInstructions,
 }) {
   const MAX_CONTENT_CHARS = 12000;
@@ -189,30 +192,50 @@ async function generateQuestionsWithGemini({
     ? `The following is the source material extracted from the uploaded document:\n\n"""\n${trimmedContent}\n"""`
     : `Generate questions about the topic: "${topic}"`;
 
-  const typeInstructions = [];
-  if (questionTypes.includes("multiple-choice"))
-    typeInstructions.push("multiple-choice questions (4 options, one correct)");
-  if (questionTypes.includes("true-false"))
-    typeInstructions.push("true/false questions");
-  const typeLine =
-    typeInstructions.length > 0
-      ? `Question types to include: ${typeInstructions.join(" and ")}.`
-      : "Use a mix of multiple-choice and true/false questions.";
+  // NEW: Build detailed type instructions based on breakdown
+  let typeInstructions = "";
+
+  if (typeBreakdown && typeBreakdown.length > 0) {
+    // Use the exact breakdown from frontend
+    const breakdownText = typeBreakdown
+      .map((t) => {
+        const typeName =
+          t.type === "multiple-choice" ? "Multiple Choice" : "True/False";
+        const formatDesc =
+          t.type === "multiple-choice"
+            ? "with 4 answer options (A, B, C, D)"
+            : "where students write 'True' or 'False' on a blank";
+        return `- ${t.count} ${typeName} question(s) ${formatDesc} (${t.points} point${t.points !== 1 ? "s" : ""} each)`;
+      })
+      .join("\n");
+
+    typeInstructions = `EXACT QUESTION TYPE BREAKDOWN:
+${breakdownText}
+
+IMPORTANT FORMATTING RULES:
+- For MULTIPLE CHOICE questions: Provide exactly 4 distinct answer options. Use actual text options, NOT just "True/False".
+- For TRUE/FALSE questions: Options MUST be ["True", "False"]. The student writes "True" or "False" on a blank line.
+- Do NOT mix formats - a True/False question should NOT have A, B, C, D options.
+- Generate questions in the order specified by the breakdown above.`;
+  } else {
+    // Fallback to old method
+    const typeList = [];
+    if (questionTypes.includes("multiple-choice"))
+      typeList.push("multiple-choice questions (4 options, one correct)");
+    if (questionTypes.includes("true-false"))
+      typeList.push("true/false questions");
+    typeInstructions = `Question types to include: ${typeList.join(" and ")}.`;
+  }
 
   const customLine = customInstructions
     ? `Additional instructions from the teacher: ${customInstructions}`
     : "";
 
   const prompt = `You are an expert educational assessment creator for Grade ${gradeLevel} students.
-Your task is to generate exactly ${numQuestions} exam questions at ${difficulty} difficulty.
+Your task is to generate exam questions at ${difficulty} difficulty.
 
-QUESTION VARIETY REQUIREMENTS:
-- Create a mix of easy, medium, and hard questions
-- Include questions that test understanding, not just memorization
-- Add scenario-based questions where applicable
-- Use real-world examples to make questions engaging
+${typeInstructions}
 
-${typeLine}
 ${customLine}
 
 ${sourceDescription}
@@ -223,25 +246,27 @@ STRICT OUTPUT RULES:
   {
     "text": "Full question text (do NOT number it)",
     "type": "multiple-choice" or "true-false",
-    "options": ["option A text", "option B text", "option C text", "option D text"],
+    "options": ["option A text", "option B text", "option C text", "option D text"] or ["True", "False"],
     "correctAnswer": "exact text of the correct option",
     "points": 1,
     "explanation": "brief explanation of why the answer is correct"
   }
-- CRITICAL: When mentioning HTML tags, write them as plain text like 'html' or 'div', not as actual HTML or with angle brackets that might be stripped.
-- For true-false: options must be exactly ["True", "False"] and correctAnswer must be "True" or "False".
-- For multiple-choice: options must be an array of exactly 4 non-empty strings.
+- CRITICAL: For TRUE/FALSE questions, options MUST be exactly ["True", "False"].
+- CRITICAL: For MULTIPLE CHOICE questions, options MUST be 4 distinct text choices.
+- When mentioning HTML tags, write them as plain text like 'html' or 'div'.
 - correctAnswer must be the EXACT full text of one of the options (NOT a letter like "A").
-- Do NOT reference "the document", "the text", or "the passage" — ask naturally as if from knowledge.
+- Do NOT reference "the document", "the text", or "the passage" — ask naturally.
 - Questions must be clearly worded, educationally valid, and appropriate for Grade ${gradeLevel}.
 - Ensure questions are diverse and cover different aspects of the material.
-- Double-check that all code references, tag names, and technical terms are complete and clearly visible.
 
-Generate ${numQuestions} questions now. Output ONLY the JSON array.`;
+Generate the questions now following the exact type breakdown above. Output ONLY the JSON array.`;
 
   console.log(
-    `🤖 Calling Gemini for ${numQuestions} questions (${difficulty}, Grade ${gradeLevel})…`,
+    `🤖 Calling Gemini for questions (${difficulty}, Grade ${gradeLevel})…`,
   );
+  if (typeBreakdown) {
+    console.log(`📋 Type breakdown:`, typeBreakdown);
+  }
 
   const jsonText = await callGemini(prompt, 4096);
 
@@ -259,22 +284,73 @@ Generate ${numQuestions} questions now. Output ONLY the JSON array.`;
     );
   }
 
-  const sanitised = questions.slice(0, numQuestions).map((q, i) => ({
-    id: Date.now() + i,
-    text: `${i + 1}. ${String(q.text || "").trim()}`,
-    type: q.type === "true-false" ? "true-false" : "multiple-choice",
-    options: Array.isArray(q.options) ? q.options : ["True", "False"],
-    correctAnswer: String(q.correctAnswer || "").trim(),
-    points: Number(q.points) || 1,
-    explanation: String(q.explanation || "").trim(),
-    topic: topic || "Document",
-  }));
+  // Validate and sanitize questions based on expected types
+  const sanitised = questions.slice(0, numQuestions).map((q, i) => {
+    // Determine if this should be true/false based on breakdown position
+    let expectedType = "multiple-choice";
+    if (typeBreakdown && typeBreakdown.length > 0) {
+      let counter = 0;
+      for (const breakdown of typeBreakdown) {
+        if (i < counter + breakdown.count) {
+          expectedType = breakdown.type;
+          break;
+        }
+        counter += breakdown.count;
+      }
+    }
+
+    // Force the type to match what we requested
+    const finalType =
+      expectedType === "true-false" ? "true-false" : "multiple-choice";
+
+    // For true/false, force options to be ["True", "False"]
+    let finalOptions = q.options;
+    let finalCorrectAnswer = q.correctAnswer;
+
+    if (finalType === "true-false") {
+      finalOptions = ["True", "False"];
+      // Ensure correctAnswer is either "True" or "False"
+      const answerText = String(q.correctAnswer || "").toLowerCase();
+      finalCorrectAnswer =
+        answerText === "true"
+          ? "True"
+          : answerText === "false"
+            ? "False"
+            : q.correctAnswer || "True";
+    } else {
+      // For multiple choice, ensure we have 4 options
+      if (!finalOptions || finalOptions.length < 4) {
+        finalOptions = ["Option A", "Option B", "Option C", "Option D"];
+      }
+    }
+
+    return {
+      id: Date.now() + i,
+      text: `${i + 1}. ${String(q.text || "").trim()}`,
+      type: finalType,
+      options: finalOptions,
+      correctAnswer: finalCorrectAnswer,
+      points: Number(q.points) || 1,
+      explanation: String(q.explanation || "").trim(),
+      topic: topic || "Document",
+    };
+  });
 
   console.log(`✅ Generated ${sanitised.length} questions via Gemini`);
+  console.log(
+    `📊 Type distribution:`,
+    sanitised.reduce((acc, q) => {
+      acc[q.type] = (acc[q.type] || 0) + 1;
+      return acc;
+    }, {}),
+  );
+
   return sanitised;
 }
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
+
+// Replace the /generate-from-file route in ai.js
 
 router.post("/generate-from-file", upload.single("file"), async (req, res) => {
   const fileInfo = await getFileInfo(req.file.path, req.file.originalname);
@@ -309,6 +385,15 @@ router.post("/generate-from-file", upload.single("file"), async (req, res) => {
       /* keep default */
     }
 
+    // NEW: Parse typeBreakdown from frontend
+    let typeBreakdown = null;
+    try {
+      typeBreakdown = JSON.parse(req.body.typeBreakdown || "[]");
+      console.log("📊 Type breakdown received:", typeBreakdown);
+    } catch {
+      /* keep null */
+    }
+
     let fileContent = "";
     try {
       fileContent = await extractTextFromFile(
@@ -341,6 +426,7 @@ router.post("/generate-from-file", upload.single("file"), async (req, res) => {
       gradeLevel,
       difficulty,
       questionTypes,
+      typeBreakdown, // Pass the breakdown to the generator
       customInstructions,
     });
 
@@ -370,6 +456,7 @@ router.post("/generate-exam", async (req, res) => {
       gradeLevel = 11,
       difficulty = "medium",
       questionTypes = ["multiple-choice"],
+      typeBreakdown, // Add this
       customInstructions = "",
     } = req.body;
 
@@ -384,6 +471,7 @@ router.post("/generate-exam", async (req, res) => {
       gradeLevel: Math.min(Math.max(parseInt(gradeLevel) || 11, 1), 12),
       difficulty,
       questionTypes,
+      typeBreakdown, // Pass through
       customInstructions,
     });
 

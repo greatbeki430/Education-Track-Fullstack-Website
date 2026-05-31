@@ -21,7 +21,7 @@ export default function HomePage() {
 
   // Stats counter animation
   const stats = [
-    { label: t.stats.students, value: 250, suffix: "+", icon: "🎓" },
+    { label: t.stats.students, value: 500, suffix: "+", icon: "🎓" },
     { label: t.stats.teachers, value: 18, suffix: "", icon: "👨‍🏫" },
     { label: t.stats.exams, value: 45, suffix: "+", icon: "📝" },
     { label: t.stats.hours, value: 100, suffix: "+", icon: "⏰" },

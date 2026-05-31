@@ -3,61 +3,50 @@ import api from "../api";
 import InfoModal from "./common/InfoModal";
 import "./AIExamGenerator.css";
 
+const DEFAULT_TYPE_CONFIG = {
+  "multiple-choice": { enabled: true, count: 5, points: 2 },
+  "true-false": { enabled: true, count: 5, points: 1 },
+};
+
 export default function AIExamGenerator({ onQuestionsGenerated, onClose }) {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [typeConfig, setTypeConfig] = useState(DEFAULT_TYPE_CONFIG);
   const [config, setConfig] = useState({
-    numQuestions: 5,
-    customNumQuestions: "",
     gradeLevel: 11,
     customGradeLevel: "",
     difficulty: "medium",
-    questionTypes: ["multiple-choice", "true-false"],
     customInstructions: "",
   });
-
   const [generatedQuestions, setGeneratedQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [rejectedQuestions, setRejectedQuestions] = useState([]);
-  const [sessionId, setSessionId] = useState(null);
   const [error, setError] = useState("");
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [infoModalConfig, setInfoModalConfig] = useState({});
 
   const fileInputRef = useRef(null);
 
-  const handleFileSelect = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const validTypes = [
-        "application/pdf",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "text/plain",
-      ];
-      if (!validTypes.includes(file.type)) {
-        setError("Please upload PDF, DOCX, or TXT file");
-        return;
-      }
-      setSelectedFile(file);
-      setError("");
-    }
-  };
+  const enabledTypes = Object.entries(typeConfig)
+    .filter(([, v]) => v.enabled)
+    .map(([k]) => k);
 
-  const handleConfigChange = (field, value) => {
-    setConfig((prev) => ({ ...prev, [field]: value }));
-  };
+  const totalQuestions = Object.values(typeConfig)
+    .filter((v) => v.enabled)
+    .reduce((s, v) => s + (parseInt(v.count) || 0), 0);
 
-  const handleNumQuestionsChange = (value) => {
-    if (value === "custom") {
-      setConfig((prev) => ({ ...prev, numQuestions: "custom" }));
-    } else {
-      setConfig((prev) => ({
-        ...prev,
-        numQuestions: parseInt(value),
-        customNumQuestions: "",
-      }));
-    }
+  const totalPoints = Object.values(typeConfig)
+    .filter((v) => v.enabled)
+    .reduce(
+      (s, v) => s + (parseInt(v.count) || 0) * (parseInt(v.points) || 1),
+      0,
+    );
+
+  const updateTypeConfig = (type, field, value) => {
+    setTypeConfig((prev) => ({
+      ...prev,
+      [type]: { ...prev[type], [field]: value },
+    }));
   };
 
   const handleGradeLevelChange = (value) => {
@@ -72,26 +61,41 @@ export default function AIExamGenerator({ onQuestionsGenerated, onClose }) {
     }
   };
 
-  const generateQuestions = async () => {
-    if (!selectedFile) {
-      setError("Please select a file to upload");
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const validTypes = [
+      "application/pdf",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "text/plain",
+    ];
+    if (!validTypes.includes(file.type)) {
+      setError("Please upload a PDF, DOCX, or TXT file.");
       return;
     }
+    setSelectedFile(file);
+    setError("");
+  };
 
-    let finalNumQuestions = config.numQuestions;
-    if (config.numQuestions === "custom") {
-      finalNumQuestions = parseInt(config.customNumQuestions);
-      if (isNaN(finalNumQuestions) || finalNumQuestions < 1) {
-        setError("Please enter a valid number of questions");
-        return;
-      }
+  const generateQuestions = async () => {
+    if (!selectedFile) {
+      setError("Please select a file to upload.");
+      return;
+    }
+    if (enabledTypes.length === 0) {
+      setError("Please enable at least one question type.");
+      return;
+    }
+    if (totalQuestions < 1) {
+      setError("Total number of questions must be at least 1.");
+      return;
     }
 
     let finalGradeLevel = config.gradeLevel;
     if (config.gradeLevel === "custom") {
       finalGradeLevel = parseInt(config.customGradeLevel);
       if (isNaN(finalGradeLevel) || finalGradeLevel < 1) {
-        setError("Please enter a valid grade level");
+        setError("Please enter a valid grade level.");
         return;
       }
     }
@@ -99,22 +103,51 @@ export default function AIExamGenerator({ onQuestionsGenerated, onClose }) {
     setLoading(true);
     setError("");
 
+    const typeBreakdown = Object.entries(typeConfig)
+      .filter(([, v]) => v.enabled && parseInt(v.count) > 0)
+      .map(([type, v]) => ({
+        type: type, // This tells the backend what type of questions to generate
+        count: parseInt(v.count),
+        points: parseInt(v.points) || 1,
+      }));
+
     const formData = new FormData();
     formData.append("file", selectedFile);
-    formData.append("numQuestions", finalNumQuestions);
+    formData.append("numQuestions", totalQuestions);
     formData.append("gradeLevel", finalGradeLevel);
     formData.append("difficulty", config.difficulty);
-    formData.append("questionTypes", JSON.stringify(config.questionTypes));
+    formData.append("questionTypes", JSON.stringify(enabledTypes));
+    formData.append("typeBreakdown", JSON.stringify(typeBreakdown));
     formData.append("customInstructions", config.customInstructions);
 
     try {
-      // FIXED: Use full path /api/ai/generate-from-file
       const response = await api.post("/api/ai/generate-from-file", formData, {
         headers: { "Content-Type": "multipart/form-data" },
+        timeout: 120000,
       });
 
-      setGeneratedQuestions(response.data.questions);
-      setSessionId(response.data.sessionId);
+      // Ensure questions have the correct type based on what was requested
+      const stamped = (response.data.questions || []).map((q, idx) => {
+        // Determine which type this question belongs to based on the breakdown
+        let assignedType = "multiple-choice";
+        let typeIndex = 0;
+
+        for (const breakdown of typeBreakdown) {
+          if (idx < typeIndex + breakdown.count) {
+            assignedType = breakdown.type;
+            break;
+          }
+          typeIndex += breakdown.count;
+        }
+
+        return {
+          ...q,
+          type: assignedType, // Force the type based on user selection
+          points: typeConfig[assignedType]?.points || q.points || 1,
+        };
+      });
+
+      setGeneratedQuestions(stamped);
       setStep(2);
       setCurrentQuestionIndex(0);
     } catch (err) {
@@ -132,12 +165,10 @@ export default function AIExamGenerator({ onQuestionsGenerated, onClose }) {
     }
   };
 
-  const confirmQuestion = async () => {
-    // Move to next question
+  const confirmQuestion = () => {
     if (currentQuestionIndex + 1 < generatedQuestions.length) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else {
-      // All questions confirmed
       onQuestionsGenerated(generatedQuestions);
     }
   };
@@ -145,9 +176,7 @@ export default function AIExamGenerator({ onQuestionsGenerated, onClose }) {
   const rejectQuestion = async () => {
     const currentQuestion = generatedQuestions[currentQuestionIndex];
 
-    // Save to rejected bank
     try {
-      // FIXED: Use full path /api/ai/save-rejected
       await api.post("/api/ai/save-rejected", {
         question: currentQuestion,
         reason: "Rejected by teacher during review",
@@ -160,23 +189,25 @@ export default function AIExamGenerator({ onQuestionsGenerated, onClose }) {
     }
 
     setLoading(true);
-
     try {
-      // FIXED: Use full path /api/ai/generate-replacement
       const response = await api.post("/api/ai/generate-replacement", {
         originalQuestion: currentQuestion,
         sourceContent: currentQuestion.sourceContext,
         customInstructions: config.customInstructions,
         gradeLevel: config.gradeLevel,
         difficulty: config.difficulty,
+        questionType: currentQuestion.type, // Pass the expected type
       });
 
-      // Replace the current question with the new one
-      const updatedQuestions = [...generatedQuestions];
-      updatedQuestions[currentQuestionIndex] = response.data.question;
-      setGeneratedQuestions(updatedQuestions);
+      const replacement = {
+        ...response.data.question,
+        type: currentQuestion.type, // Preserve the original type
+        points: currentQuestion.points,
+      };
 
-      // Stay on same index to review the new question
+      const updated = [...generatedQuestions];
+      updated[currentQuestionIndex] = replacement;
+      setGeneratedQuestions(updated);
     } catch (err) {
       setError("Failed to generate replacement question. Please try again.");
     } finally {
@@ -184,26 +215,89 @@ export default function AIExamGenerator({ onQuestionsGenerated, onClose }) {
     }
   };
 
-  const getQuestionTypeLabel = (type) => {
-    return type === "multiple-choice" ? "🔘 Multiple Choice" : "✅ True/False";
+  const getQuestionTypeLabel = (type) =>
+    type === "multiple-choice" ? "Multiple Choice" : "True / False";
+
+  // Render question based on its actual type
+  const renderQuestionPreview = (question) => {
+    const isTrueFalse =
+      question.type === "true-false" || question.type === "true/false";
+
+    if (isTrueFalse) {
+      // True/False: Show with blanks for students to write on
+      return (
+        <div className="tf-preview-container">
+          <div className="tf-print-options">
+            <div className="tf-print-option">
+              <span className="tf-print-blank">__________</span>
+              <span className="tf-print-label">True</span>
+            </div>
+            <div className="tf-print-option">
+              <span className="tf-print-blank">__________</span>
+              <span className="tf-print-label">False</span>
+            </div>
+          </div>
+          <div className="answer-section">
+            <span className="answer-label">✓ Correct Answer:</span>
+            <span className="answer-value">{question.correctAnswer}</span>
+          </div>
+        </div>
+      );
+    }
+
+    // Multiple Choice: Show with bubbles
+    return (
+      <>
+        <div className="options-list">
+          {(question.options || []).map((opt, idx) => (
+            <div
+              key={idx}
+              className={`option-item ${opt === question.correctAnswer ? "option-correct" : ""}`}
+            >
+              <span className="option-letter">
+                {String.fromCharCode(65 + idx)}.
+              </span>
+              <span className="option-bubble-preview"></span>
+              <span className="option-text">{opt}</span>
+              {opt === question.correctAnswer && (
+                <span className="option-tick">✓</span>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="answer-section">
+          <span className="answer-label">✓ Correct Answer:</span>
+          <span className="answer-value">{question.correctAnswer}</span>
+        </div>
+      </>
+    );
   };
+
+  const currentQ = generatedQuestions[currentQuestionIndex];
 
   return (
     <div className="ai-exam-generator">
       <div className="ai-generator-modal">
         <div className="modal-header">
-          <h2>🤖 AI Exam Generator</h2>
+          <div className="modal-header-left">
+            <span className="modal-icon">🤖</span>
+            <div>
+              <h2>AI Exam Generator</h2>
+              <p>Upload source material and configure your exam structure</p>
+            </div>
+          </div>
           <button onClick={onClose} className="close-btn">
-            &times;
+            ✕
           </button>
         </div>
 
+        {/* STEP 1: CONFIG */}
         {step === 1 && (
           <div className="step-config">
-            <div className="file-upload-section">
-              <h3>📄 Upload Source Material</h3>
+            <section className="config-section">
+              <h3 className="section-title">📄 Source Material</h3>
               <div
-                className="file-drop-zone"
+                className={`file-drop-zone ${selectedFile ? "has-file" : ""}`}
                 onClick={() => fileInputRef.current.click()}
               >
                 <input
@@ -215,60 +309,177 @@ export default function AIExamGenerator({ onQuestionsGenerated, onClose }) {
                 />
                 {selectedFile ? (
                   <div className="file-selected">
-                    <span>📎 {selectedFile.name}</span>
+                    <span className="file-icon">📎</span>
+                    <span className="file-name-text">{selectedFile.name}</span>
                     <button
+                      className="file-clear-btn"
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedFile(null);
+                        fileInputRef.current.value = "";
                       }}
                     >
-                      ✖
+                      ✕
                     </button>
                   </div>
                 ) : (
                   <div className="file-prompt">
-                    <span>📁 Click or drag to upload</span>
-                    <small>Supports PDF, DOCX, TXT</small>
+                    <span className="file-prompt-icon">📁</span>
+                    <span className="file-prompt-text">
+                      Click to upload a file
+                    </span>
+                    <small>PDF, DOCX, or TXT</small>
                   </div>
                 )}
               </div>
-            </div>
+            </section>
 
-            <div className="config-section">
-              <h3>⚙️ Configuration</h3>
+            <section className="config-section">
+              <h3 className="section-title">📝 Question Structure</h3>
+              <p className="section-hint">
+                Select question types. Each type will generate questions in its
+                own format.
+              </p>
 
-              <div className="config-row">
-                <div className="config-field">
-                  <label>🔢 Number of Questions</label>
-                  <select
-                    value={config.numQuestions}
-                    onChange={(e) => handleNumQuestionsChange(e.target.value)}
-                  >
-                    <option value={3}>3 questions</option>
-                    <option value={5}>5 questions</option>
-                    <option value={10}>10 questions</option>
-                    <option value={15}>15 questions</option>
-                    <option value={20}>20 questions</option>
-                    <option value="custom">Custom...</option>
-                  </select>
-                  {config.numQuestions === "custom" && (
-                    <input
-                      type="number"
-                      placeholder="Enter number"
-                      value={config.customNumQuestions}
-                      onChange={(e) =>
-                        setConfig((prev) => ({
-                          ...prev,
-                          customNumQuestions: e.target.value,
-                        }))
-                      }
-                      min="1"
-                      max="50"
-                    />
-                  )}
+              <div className="type-config-table">
+                <div className="type-config-header">
+                  <span>Type</span>
+                  <span>Include</span>
+                  <span>Questions</span>
+                  <span>Points each</span>
+                  <span>Format</span>
                 </div>
 
-                <div className="config-field">
+                {/* Multiple Choice row */}
+                <div
+                  className={`type-config-row ${typeConfig["multiple-choice"].enabled ? "enabled" : "disabled"}`}
+                >
+                  <div className="type-label">
+                    <span className="type-dot mc-dot"></span>
+                    Multiple Choice
+                  </div>
+                  <div className="type-toggle">
+                    <label className="toggle-switch">
+                      <input
+                        type="checkbox"
+                        checked={typeConfig["multiple-choice"].enabled}
+                        onChange={(e) =>
+                          updateTypeConfig(
+                            "multiple-choice",
+                            "enabled",
+                            e.target.checked,
+                          )
+                        }
+                      />
+                      <span className="toggle-slider"></span>
+                    </label>
+                  </div>
+                  <div className="type-count">
+                    <input
+                      type="number"
+                      min="1"
+                      max="50"
+                      value={typeConfig["multiple-choice"].count}
+                      disabled={!typeConfig["multiple-choice"].enabled}
+                      onChange={(e) =>
+                        updateTypeConfig(
+                          "multiple-choice",
+                          "count",
+                          e.target.value,
+                        )
+                      }
+                    />
+                    <span className="input-unit">questions</span>
+                  </div>
+                  <div className="type-points">
+                    <input
+                      type="number"
+                      min="1"
+                      max="20"
+                      value={typeConfig["multiple-choice"].points}
+                      disabled={!typeConfig["multiple-choice"].enabled}
+                      onChange={(e) =>
+                        updateTypeConfig(
+                          "multiple-choice",
+                          "points",
+                          e.target.value,
+                        )
+                      }
+                    />
+                    <span className="input-unit">pts</span>
+                  </div>
+                  <div className="type-format">A, B, C, D with ○ bubbles</div>
+                </div>
+
+                {/* True / False row */}
+                <div
+                  className={`type-config-row ${typeConfig["true-false"].enabled ? "enabled" : "disabled"}`}
+                >
+                  <div className="type-label">
+                    <span className="type-dot tf-dot"></span>
+                    True / False
+                  </div>
+                  <div className="type-toggle">
+                    <label className="toggle-switch">
+                      <input
+                        type="checkbox"
+                        checked={typeConfig["true-false"].enabled}
+                        onChange={(e) =>
+                          updateTypeConfig(
+                            "true-false",
+                            "enabled",
+                            e.target.checked,
+                          )
+                        }
+                      />
+                      <span className="toggle-slider"></span>
+                    </label>
+                  </div>
+                  <div className="type-count">
+                    <input
+                      type="number"
+                      min="1"
+                      max="50"
+                      value={typeConfig["true-false"].count}
+                      disabled={!typeConfig["true-false"].enabled}
+                      onChange={(e) =>
+                        updateTypeConfig("true-false", "count", e.target.value)
+                      }
+                    />
+                    <span className="input-unit">questions</span>
+                  </div>
+                  <div className="type-points">
+                    <input
+                      type="number"
+                      min="1"
+                      max="20"
+                      value={typeConfig["true-false"].points}
+                      disabled={!typeConfig["true-false"].enabled}
+                      onChange={(e) =>
+                        updateTypeConfig("true-false", "points", e.target.value)
+                      }
+                    />
+                    <span className="input-unit">pts</span>
+                  </div>
+                  <div className="type-format">
+                    __________ True / __________ False
+                  </div>
+                </div>
+
+                <div className="type-config-totals">
+                  <span>Total</span>
+                  <span></span>
+                  <span>{totalQuestions} questions</span>
+                  <span></span>
+                  <span className="totals-pts">{totalPoints} pts</span>
+                </div>
+              </div>
+            </section>
+
+            <section className="config-section">
+              <h3 className="section-title">⚙️ Exam Settings</h3>
+              <div className="settings-row">
+                <div className="settings-field">
                   <label>📖 Grade Level</label>
                   <select
                     value={config.gradeLevel}
@@ -278,12 +489,13 @@ export default function AIExamGenerator({ onQuestionsGenerated, onClose }) {
                     <option value={10}>Grade 10</option>
                     <option value={11}>Grade 11</option>
                     <option value={12}>Grade 12</option>
-                    <option value="custom">Custom...</option>
+                    <option value="custom">Custom…</option>
                   </select>
                   {config.gradeLevel === "custom" && (
                     <input
                       type="number"
-                      placeholder="Enter grade"
+                      className="custom-inline"
+                      placeholder="Grade number"
                       value={config.customGradeLevel}
                       onChange={(e) =>
                         setConfig((prev) => ({
@@ -291,20 +503,18 @@ export default function AIExamGenerator({ onQuestionsGenerated, onClose }) {
                           customGradeLevel: e.target.value,
                         }))
                       }
-                      min="1"
-                      max="12"
                     />
                   )}
                 </div>
-              </div>
-
-              <div className="config-row">
-                <div className="config-field">
+                <div className="settings-field">
                   <label>🎯 Difficulty</label>
                   <select
                     value={config.difficulty}
                     onChange={(e) =>
-                      handleConfigChange("difficulty", e.target.value)
+                      setConfig((prev) => ({
+                        ...prev,
+                        difficulty: e.target.value,
+                      }))
                     }
                   >
                     <option value="easy">Easy</option>
@@ -312,74 +522,27 @@ export default function AIExamGenerator({ onQuestionsGenerated, onClose }) {
                     <option value="hard">Hard</option>
                   </select>
                 </div>
-
-                <div className="config-field">
-                  <label>📝 Question Types</label>
-                  <div className="checkbox-group">
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={config.questionTypes.includes(
-                          "multiple-choice",
-                        )}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            handleConfigChange("questionTypes", [
-                              ...config.questionTypes,
-                              "multiple-choice",
-                            ]);
-                          } else {
-                            handleConfigChange(
-                              "questionTypes",
-                              config.questionTypes.filter(
-                                (t) => t !== "multiple-choice",
-                              ),
-                            );
-                          }
-                        }}
-                      />
-                      Multiple Choice
-                    </label>
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={config.questionTypes.includes("true-false")}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            handleConfigChange("questionTypes", [
-                              ...config.questionTypes,
-                              "true-false",
-                            ]);
-                          } else {
-                            handleConfigChange(
-                              "questionTypes",
-                              config.questionTypes.filter(
-                                (t) => t !== "true-false",
-                              ),
-                            );
-                          }
-                        }}
-                      />
-                      True/False
-                    </label>
-                  </div>
-                </div>
               </div>
-
-              <div className="config-field full-width">
-                <label>📋 Custom Instructions (Optional)</label>
+              <div className="settings-field full-width">
+                <label>
+                  📋 Custom Instructions{" "}
+                  <span className="optional">(optional)</span>
+                </label>
                 <textarea
-                  placeholder="e.g., Focus on vocabulary, Include questions about dates, Emphasize critical thinking..."
+                  rows="3"
+                  placeholder="e.g., Focus on vocabulary, include questions about dates..."
                   value={config.customInstructions}
                   onChange={(e) =>
-                    handleConfigChange("customInstructions", e.target.value)
+                    setConfig((prev) => ({
+                      ...prev,
+                      customInstructions: e.target.value,
+                    }))
                   }
-                  rows="3"
                 />
               </div>
-            </div>
+            </section>
 
-            {error && <div className="error-message">{error}</div>}
+            {error && <div className="error-banner">❌ {error}</div>}
 
             <div className="modal-actions">
               <button onClick={onClose} className="btn-secondary">
@@ -388,18 +551,19 @@ export default function AIExamGenerator({ onQuestionsGenerated, onClose }) {
               <button
                 onClick={generateQuestions}
                 className="btn-primary"
-                disabled={loading}
+                disabled={loading || !selectedFile || totalQuestions < 1}
               >
-                {loading ? "✨ Generating..." : "🚀 Generate Questions"}
+                {loading ? "✨ Generating…" : "🚀 Generate Questions"}
               </button>
             </div>
           </div>
         )}
 
-        {step === 2 && generatedQuestions.length > 0 && (
+        {/* STEP 2: REVIEW */}
+        {step === 2 && currentQ && (
           <div className="step-review">
             <div className="review-progress">
-              <div className="progress-bar">
+              <div className="progress-track">
                 <div
                   className="progress-fill"
                   style={{
@@ -407,48 +571,37 @@ export default function AIExamGenerator({ onQuestionsGenerated, onClose }) {
                   }}
                 />
               </div>
-              <span>
-                Question {currentQuestionIndex + 1} of{" "}
-                {generatedQuestions.length}
-              </span>
+              <div className="progress-label">
+                <span>
+                  Reviewing question {currentQuestionIndex + 1} of{" "}
+                  {generatedQuestions.length}
+                </span>
+                <span className="progress-pts-badge">
+                  {currentQ.points} pt{currentQ.points !== 1 ? "s" : ""}
+                </span>
+              </div>
             </div>
 
             <div className="question-review-card">
-              <div className="question-type-badge">
-                {getQuestionTypeLabel(
-                  generatedQuestions[currentQuestionIndex].type,
-                )}
+              <div className="qrc-badges">
+                <span
+                  className={`type-badge ${currentQ.type === "multiple-choice" ? "badge-mc" : "badge-tf"}`}
+                >
+                  {getQuestionTypeLabel(currentQ.type)}
+                </span>
+                <span className="points-badge">
+                  {currentQ.points} pt{currentQ.points !== 1 ? "s" : ""}
+                </span>
               </div>
 
-              <h3 className="question-text">
-                {generatedQuestions[currentQuestionIndex].text}
-              </h3>
+              <p className="question-text">{currentQ.text}</p>
 
-              {generatedQuestions[currentQuestionIndex].type ===
-                "multiple-choice" && (
-                <div className="options-list">
-                  {generatedQuestions[currentQuestionIndex].options.map(
-                    (opt, idx) => (
-                      <div key={idx} className="option-item">
-                        <span className="option-letter">
-                          {String.fromCharCode(65 + idx)}.
-                        </span>
-                        <span>{opt}</span>
-                      </div>
-                    ),
-                  )}
-                </div>
-              )}
+              {renderQuestionPreview(currentQ)}
 
-              <div className="answer-section">
-                <strong>✓ Correct Answer:</strong>{" "}
-                {generatedQuestions[currentQuestionIndex].correctAnswer}
-              </div>
-
-              {generatedQuestions[currentQuestionIndex].explanation && (
+              {currentQ.explanation && (
                 <div className="explanation-section">
-                  <strong>💡 Explanation:</strong>{" "}
-                  {generatedQuestions[currentQuestionIndex].explanation}
+                  <span className="explanation-label">💡 Explanation:</span>
+                  <span>{currentQ.explanation}</span>
                 </div>
               )}
 
@@ -469,45 +622,27 @@ export default function AIExamGenerator({ onQuestionsGenerated, onClose }) {
                 >
                   {currentQuestionIndex + 1 === generatedQuestions.length
                     ? "✅ Confirm All & Save"
-                    : "✓ Accept & Next"}
+                    : "✓ Accept & Next →"}
                 </button>
               </div>
-
-              {loading && (
-                <div className="loading-overlay">
-                  <div className="spinner"></div>
-                  <p>AI is generating a replacement question...</p>
-                </div>
-              )}
             </div>
 
-            <div className="rejected-info">
-              <details>
-                <summary>
-                  📋 View Rejected Questions Bank ({rejectedQuestions.length})
-                </summary>
-                <div className="rejected-list">
-                  {rejectedQuestions.length === 0 ? (
-                    <p>No rejected questions yet</p>
-                  ) : (
-                    rejectedQuestions.map((q, idx) => (
-                      <div key={idx} className="rejected-item">
-                        <p>
-                          <strong>Q{idx + 1}:</strong>{" "}
-                          {q.question?.substring(0, 100)}...
-                        </p>
-                        <small>
-                          Rejected: {new Date(q.rejectedAt).toLocaleString()}
-                        </small>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </details>
+            <div className="question-strip">
+              {generatedQuestions.map((q, idx) => (
+                <button
+                  key={idx}
+                  className={`strip-btn ${idx === currentQuestionIndex ? "strip-active" : ""} ${q.type === "multiple-choice" ? "strip-mc" : "strip-tf"}`}
+                  onClick={() => setCurrentQuestionIndex(idx)}
+                  title={`Q${idx + 1} — ${getQuestionTypeLabel(q.type)} (${q.points} pt)`}
+                >
+                  {idx + 1}
+                </button>
+              ))}
             </div>
           </div>
         )}
       </div>
+
       <InfoModal
         isOpen={showInfoModal}
         onClose={() => setShowInfoModal(false)}

@@ -26,36 +26,43 @@ function getChoices(question) {
 }
 
 /**
- * Group questions by type so we can render section headers with
- * a single "each question = X pts" instruction instead of per-question labels.
+ * Group questions into at most TWO sections: Multiple Choice first, then True or False.
+ * ALL questions of the same type are merged regardless of their original order,
+ * so section headers never repeat mid-document.
  * Returns: [ { type, label, pointsEach, questions: [{q, origIdx}] } ]
  */
 function groupQuestionsByType(questions) {
-  const sections = [];
-  let current = null;
+  const mcBucket = [];
+  const tfBucket = [];
 
   questions.forEach((q, idx) => {
-    const type =
-      q.type === "true-false" || q.type === "true/false"
-        ? "true-false"
-        : "multiple-choice";
-
-    if (!current || current.type !== type) {
-      current = {
-        type,
-        label: type === "true-false" ? "True or False" : "Multiple Choice",
-        pointsEach: q.points || 1,
-        questions: [],
-      };
-      sections.push(current);
-    }
-    current.questions.push({ q, origIdx: idx });
+    const isTF = q.type === "true-false" || q.type === "true/false";
+    (isTF ? tfBucket : mcBucket).push({ q, origIdx: idx });
   });
 
+  const sections = [];
+  if (mcBucket.length > 0) {
+    sections.push({
+      type: "multiple-choice",
+      label: "Multiple Choice",
+      pointsEach: mcBucket[0].q.points || 1,
+      questions: mcBucket,
+    });
+  }
+  if (tfBucket.length > 0) {
+    sections.push({
+      type: "true-false",
+      label: "True or False",
+      pointsEach: tfBucket[0].q.points || 1,
+      questions: tfBucket,
+    });
+  }
   return sections;
 }
 
 // ─── STUDENT PRINT HTML ───────────────────────────────────────────────────────
+
+// Replace the buildStudentPrintHTML function in TakeExam.jsx
 
 function buildStudentPrintHTML(exam) {
   const title = exam?.title || "Untitled Exam";
@@ -65,8 +72,6 @@ function buildStudentPrintHTML(exam) {
     exam?.questions?.reduce((s, q) => s + (q.points || 1), 0) || 0;
 
   const sections = groupQuestionsByType(exam?.questions || []);
-
-  // running question counter across sections
   let globalNum = 0;
 
   const sectionsHTML = sections
@@ -75,9 +80,35 @@ function buildStudentPrintHTML(exam) {
         .map(({ q }) => {
           globalNum++;
           const choices = getChoices(q);
-          // NO radio buttons — pure bubble circles
-          const choicesHTML = choices.length
-            ? `<div class="choices">
+          const isTrueFalse =
+            q.type === "true-false" || q.type === "true/false";
+
+          // Clean question text - remove any existing number prefix
+          let rawText = (q.text || q.question || "").replace(/^\d+\.\s*/, "");
+          // Also remove "True or False:" prefix if present
+          rawText = rawText.replace(/^True or False:\s*/i, "");
+
+          // Different rendering for True/False vs Multiple Choice
+          let choicesHTML = "";
+
+          if (isTrueFalse) {
+            // True/False: simple format with blanks, no bubbles
+            choicesHTML = `
+              <div class="tf-options">
+                <div class="tf-option">
+                  <span class="tf-blank">__________</span>
+                  <span class="tf-label">True</span>
+                </div>
+                <div class="tf-option">
+                  <span class="tf-blank">__________</span>
+                  <span class="tf-label">False</span>
+                </div>
+              </div>
+            `;
+          } else {
+            // Multiple Choice: with bubble circles
+            choicesHTML = `
+              <div class="choices">
                 ${choices
                   .map((c, ci) => {
                     const text = typeof c === "string" ? c : c.text || "";
@@ -88,18 +119,26 @@ function buildStudentPrintHTML(exam) {
                     </div>`;
                   })
                   .join("")}
-              </div>`
-            : `<div class="answer-line"><div class="line"></div><div class="line"></div></div>`;
+              </div>
+            `;
+          }
 
           return `<div class="question-block">
             <div class="question-header">
+              <span class="q-ans-blank">_______</span>
               <span class="q-num">${globalNum}.</span>
-              <span class="q-text">${q.text || q.question || ""}</span>
+              <span class="q-text">${rawText}</span>
             </div>
             ${choicesHTML}
           </div>`;
         })
         .join("");
+
+      // Section-specific instructions
+      const instructionText =
+        section.type === "true-false"
+          ? "Write <strong>True</strong> or <strong>False</strong> on the blank provided before each question number."
+          : "Choose the best answer. Circle or shade the bubble (○) next to your chosen letter.";
 
       return `
         <div class="section-block">
@@ -108,11 +147,7 @@ function buildStudentPrintHTML(exam) {
             <span class="section-pts">(Each question = ${section.pointsEach} pt${section.pointsEach !== 1 ? "s" : ""})</span>
           </div>
           <div class="section-instruction">
-            ${
-              section.type === "multiple-choice"
-                ? "Choose the best answer. Circle or shade the bubble (○) next to your chosen letter."
-                : "Write <strong>True</strong> or <strong>False</strong> in the space provided."
-            }
+            ${instructionText}
           </div>
           ${sectionQHTML}
         </div>`;
@@ -129,13 +164,13 @@ function buildStudentPrintHTML(exam) {
   body { font-family: "Times New Roman", Times, serif; font-size: 11pt; color: #111; background: white; }
   .page { max-width: 720px; margin: 0 auto; padding: 2cm 2cm 2.5cm; }
 
-  /* ── Header ── */
+  /* Header */
   .exam-header { border-bottom: 2.5px solid #111; padding-bottom: 10px; margin-bottom: 16px; }
   .school-name { font-size: 12pt; font-weight: bold; text-align: center; letter-spacing: 1px; text-transform: uppercase; }
   .exam-title  { font-size: 20pt; font-weight: bold; text-align: center; margin: 6px 0 4px; }
   .exam-meta   { display: flex; justify-content: space-between; font-size: 10pt; margin-top: 8px; }
 
-  /* ── Student info box ── */
+  /* Student info box */
   .student-info {
     display: grid; grid-template-columns: 1fr 1fr;
     gap: 8px 24px; margin: 14px 0 18px;
@@ -145,14 +180,14 @@ function buildStudentPrintHTML(exam) {
   .info-label { font-weight: bold; white-space: nowrap; }
   .info-line  { flex: 1; border-bottom: 1px solid #888; min-width: 80px; height: 18px; }
 
-  /* ── General instructions ── */
+  /* General instructions */
   .gen-instructions {
     background: #f7f7f7; border-left: 3px solid #333;
     padding: 8px 12px; font-size: 10pt; margin-bottom: 20px; line-height: 1.6;
   }
   .gen-instructions strong { display: block; margin-bottom: 3px; }
 
-  /* ── Section header ── */
+  /* Section header */
   .section-block { margin-bottom: 24px; }
   .section-header {
     display: flex; align-items: baseline; gap: 10px;
@@ -166,32 +201,62 @@ function buildStudentPrintHTML(exam) {
     margin-bottom: 12px; padding-left: 4px;
   }
 
-  /* ── Questions ── */
-  .question-block  { margin-bottom: 14px; page-break-inside: avoid; }
-  .question-header { display: flex; gap: 6px; align-items: baseline; margin-bottom: 5px; }
-  .q-num  { font-weight: bold; min-width: 24px; flex-shrink: 0; }
+  /* Questions */
+  .question-block  { margin-bottom: 16px; page-break-inside: avoid; }
+  .question-header { display: flex; gap: 5px; align-items: baseline; margin-bottom: 5px; flex-wrap: nowrap; }
+  
+  /* Answer blank — student writes answer here */
+  .q-ans-blank {
+    font-family: "Times New Roman", serif;
+    font-size: 11pt;
+    min-width: 52px;
+    flex-shrink: 0;
+    border-bottom: 1.2px solid #555;
+    padding-bottom: 1px;
+    margin-right: 4px;
+    color: #111;
+  }
+  .q-num  { font-weight: bold; min-width: 22px; flex-shrink: 0; }
   .q-text { flex: 1; line-height: 1.55; }
 
-  /* ── Choices – 2-column grid, NO radio inputs ── */
+  /* Multiple Choice - 2-column grid with bubbles */
   .choices {
     display: grid; grid-template-columns: 1fr 1fr;
     gap: 5px 20px; padding-left: 30px; margin-top: 4px;
   }
-  .choice       { display: flex; align-items: center; gap: 7px; font-size: 10.5pt; }
+  .choice { display: flex; align-items: center; gap: 7px; font-size: 10.5pt; }
   .choice-label { font-weight: bold; min-width: 18px; flex-shrink: 0; }
-  /* Pure CSS bubble — absolutely no HTML form element */
   .choice-bubble {
     width: 13px; height: 13px;
     border: 1.5px solid #444; border-radius: 50%;
     flex-shrink: 0; display: inline-block;
   }
-  .choice-text  { line-height: 1.4; }
+  .choice-text { line-height: 1.4; }
 
-  /* ── Written answer lines ── */
-  .answer-line { padding-left: 30px; }
-  .line { border-bottom: 1px solid #888; margin-bottom: 10px; height: 22px; }
+  /* True/False options - two blanks in a row */
+  .tf-options {
+    display: flex;
+    gap: 30px;
+    padding-left: 30px;
+    margin-top: 4px;
+  }
+  .tf-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10.5pt;
+  }
+  .tf-blank {
+    display: inline-block;
+    width: 50px;
+    border-bottom: 1.2px solid #555;
+    margin-right: 4px;
+  }
+  .tf-label {
+    font-weight: normal;
+  }
 
-  /* ── Footer ── */
+  /* Footer */
   .exam-footer {
     margin-top: 32px; border-top: 1px solid #ccc;
     padding-top: 8px; font-size: 9pt; color: #666; text-align: center;
@@ -226,7 +291,9 @@ function buildStudentPrintHTML(exam) {
   <div class="gen-instructions">
     <strong>General Instructions</strong>
     Read all questions carefully before answering. Answer all questions.
-    For multiple-choice, shade or circle the bubble (○) beside the correct letter.
+    Write your answer on the blank (_______) provided before each question number.
+    For multiple-choice questions, circle or shade the bubble (○) beside the correct letter.
+    For true/false questions, write "True" or "False" on the blank before the question number.
     Write neatly and clearly. Do not use correction fluid without the invigilator's permission.
   </div>
 
@@ -268,9 +335,10 @@ function buildTeacherKeyHTML(exam) {
                 : choices[correctIdx].text
             }`
           : correctRaw;
+      const cleanText = (q.text || "").replace(/^\d+\.\s*/, "");
       return `<tr>
         <td>${tableGlobalNum}</td>
-        <td>${(q.text || "").substring(0, 65)}${(q.text || "").length > 65 ? "…" : ""}</td>
+        <td>${cleanText.substring(0, 65)}${cleanText.length > 65 ? "…" : ""}</td>
         <td class="correct-cell">${correctLabel}</td>
         <td>${q.points || 1}</td>
       </tr>`;
@@ -324,10 +392,11 @@ function buildTeacherKeyHTML(exam) {
             q.rationale ||
             `The correct answer is <strong>${correctLabel}</strong>.`;
 
+          const rawText = (q.text || q.question || "").replace(/^\d+\.\s*/, "");
           return `<div class="question-block">
             <div class="question-header">
               <span class="q-num">${detailGlobalNum}.</span>
-              <span class="q-text">${q.text || q.question || ""}</span>
+              <span class="q-text">${rawText}</span>
             </div>
             ${choicesHTML}
             <div class="answer-box">
@@ -534,10 +603,11 @@ function buildDigitalReportHTML(exam, answers, markedQuestions, user) {
                 .join("")
             : `<div style="padding:4px 8px; color:#999; font-size:10pt;">(Not answered)</div>`;
 
+          const rawText = (q.text || q.question || "").replace(/^\d+\.\s*/, "");
           return `<div style="margin-bottom:16px; page-break-inside:avoid; border-left:3px solid ${!userAns ? "#f59e0b" : userAns === correct ? "#22c55e" : "#ef4444"}; padding-left:12px;">
             <div style="display:flex; gap:8px; align-items:baseline; margin-bottom:6px;">
               <strong style="min-width:24px; color:#1e466e;">${globalNum}.</strong>
-              <span style="flex:1; line-height:1.5;">${q.text || q.question || ""}</span>
+              <span style="flex:1; line-height:1.5;">${rawText}</span>
               ${isMarked ? '<span style="background:#fbbf24; color:#111; font-size:9pt; padding:1px 7px; border-radius:10px; white-space:nowrap;">📌 Marked</span>' : ""}
             </div>
             <div style="padding-left:22px;">${choicesHTML}</div>
@@ -877,7 +947,9 @@ export default function TakeExam({ user }) {
                   >
                     <div className="review-q-header">
                       <span className="review-q-num">Q{reviewGlobalNum}</span>
-                      <span className="review-q-text">{q.text}</span>
+                      <span className="review-q-text">
+                        {(q.text || "").replace(/^\d+\.\s*/, "")}
+                      </span>
                       <span
                         className={`review-status-badge ${
                           isCorrect
