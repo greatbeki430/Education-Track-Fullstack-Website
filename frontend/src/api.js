@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:5000",
+  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:5000",
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
@@ -21,9 +21,7 @@ api.interceptors.request.use(
     console.log(`📤 ${config.method.toUpperCase()} ${config.url}`);
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  },
+  (error) => Promise.reject(error),
 );
 
 // Response interceptor for handling token expiration
@@ -35,32 +33,26 @@ api.interceptors.response.use(
   (error) => {
     const originalRequest = error.config;
 
-    // Check if error is 401 (Unauthorized) - token expired
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      // Don't redirect for login attempts
-      if (originalRequest.url === "/api/auth/login") {
+      if (originalRequest.url.includes("/api/auth/login")) {
         return Promise.reject(error);
       }
 
       console.log("🔐 Token expired or invalid. Redirecting to login...");
 
-      // Clear local storage
       localStorage.removeItem("token");
       localStorage.removeItem("user");
 
-      // Redirect to login if not already there and not already redirecting
       if (!isRedirecting && window.location.pathname !== "/login") {
         isRedirecting = true;
 
-        // Show modal or notification before redirect
         const event = new CustomEvent("auth:token-expired", {
           detail: { message: "Your session has expired. Please login again." },
         });
         window.dispatchEvent(event);
 
-        // Redirect after a short delay
         setTimeout(() => {
           window.location.href = "/login";
           isRedirecting = false;
