@@ -1,7 +1,11 @@
 import axios from "axios";
 
+// Debug: Show what URL is actually being used
+const baseURL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+console.log("🔧 API Base URL Configured as:", baseURL);
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:5000",
+  baseURL: baseURL,
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
