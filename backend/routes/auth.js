@@ -1,7 +1,7 @@
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { db } from "../server.js";
+import User from "../models/User.js";
 import { requireAuthCookie } from "../middleware/requireAuthCookie.js";
 
 const router = express.Router();
@@ -25,11 +25,8 @@ router.post("/login", async (req, res) => {
       return res.status(500).json({ error: "Server configuration error" });
     }
 
-    // Find user in database
-    const user = await db.get(
-      "SELECT id, username, password, role, fullName, studentId FROM users WHERE username = ?",
-      [username],
-    );
+    // Find user in MongoDB
+    const user = await User.findOne({ username });
 
     if (!user) {
       return res.status(401).json({ error: "Invalid credentials" });
@@ -43,7 +40,7 @@ router.post("/login", async (req, res) => {
 
     // Create JWT payload (keep it minimal - no sensitive data)
     const payload = {
-      id: user.id,
+      id: user._id,
       username: user.username,
       role: user.role,
       studentId: user.studentId || null,
@@ -51,24 +48,24 @@ router.post("/login", async (req, res) => {
 
     // Sign the token
     const token = jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXPIRES_IN || "24h", // Changed to 24h for better UX
+      expiresIn: process.env.JWT_EXPIRES_IN || "24h",
     });
 
     // Set httpOnly cookie (browser stores it, JS cannot read it)
     res.cookie("access_token", token, {
-      httpOnly: true, // Prevents XSS attacks
-      secure: process.env.NODE_ENV === "production", // HTTPS only in production
-      sameSite: "lax", // Protects against CSRF
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
-      path: "/", // Available to all routes
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 24 * 60 * 60 * 1000,
+      path: "/",
     });
 
-    // ✅ RETURN TOKEN IN BODY for frontend compatibility
+    // Return token in body for frontend compatibility
     res.json({
-      token, // ← FRONTEND NEEDS THIS
+      token,
       message: "Login successful",
       user: {
-        id: user.id,
+        id: user._id,
         username: user.username,
         role: user.role,
         fullName: user.fullName,
@@ -100,7 +97,6 @@ router.post("/logout", (req, res) => {
  * GET /api/auth/me
  */
 router.get("/me", requireAuthCookie, (req, res) => {
-  // req.user was set by requireAuthCookie middleware
   res.json({
     user: req.user,
     authenticated: true,
@@ -128,9 +124,7 @@ router.post("/register", requireAuthCookie, async (req, res) => {
     }
 
     // Check if username exists
-    const existing = await db.get("SELECT id FROM users WHERE username = ?", [
-      username,
-    ]);
+    const existing = await User.findOne({ username });
     if (existing) {
       return res.status(400).json({ error: "Username already exists" });
     }
@@ -138,20 +132,25 @@ router.post("/register", requireAuthCookie, async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Insert user
-    const result = await db.run(
-      "INSERT INTO users (username, password, role, fullName, studentId) VALUES (?, ?, ?, ?, ?)",
-      [username, hashedPassword, role, fullName || null, studentId || null],
-    );
+    // Create user
+    const user = new User({
+      username,
+      password: hashedPassword,
+      role,
+      fullName: fullName || null,
+      studentId: studentId || null,
+    });
+
+    await user.save();
 
     res.status(201).json({
       message: "User created successfully",
       user: {
-        id: result.lastID,
-        username,
-        role,
-        fullName,
-        studentId,
+        id: user._id,
+        username: user.username,
+        role: user.role,
+        fullName: user.fullName,
+        studentId: user.studentId,
       },
     });
   } catch (error) {

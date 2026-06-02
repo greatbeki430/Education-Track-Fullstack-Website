@@ -1,5 +1,5 @@
 import express from "express";
-import { db } from "../server.js";
+import Announcement from "../models/Announcement.js";
 
 const router = express.Router();
 
@@ -7,11 +7,18 @@ const router = express.Router();
 router.get("/", async (req, res) => {
   try {
     const { targetClass } = req.query;
-    let query =
-      'SELECT * FROM announcements WHERE targetClass = ? OR targetClass = "all" ORDER BY pinned DESC, createdAt DESC';
-    let params = [targetClass || "all"];
+    let query = {};
 
-    const announcements = await db.all(query, params);
+    if (targetClass) {
+      query.$or = [{ targetClass: targetClass }, { targetClass: "all" }];
+    } else {
+      query.targetClass = { $in: ["all", targetClass] };
+    }
+
+    const announcements = await Announcement.find(query).sort({
+      pinned: -1,
+      createdAt: -1,
+    });
     res.json(announcements);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -23,15 +30,16 @@ router.post("/", async (req, res) => {
   const { title, content, targetClass, author, pinned } = req.body;
 
   try {
-    const result = await db.run(
-      "INSERT INTO announcements (title, content, targetClass, author, pinned) VALUES (?, ?, ?, ?, ?)",
-      [title, content, targetClass || "all", author, pinned ? 1 : 0],
-    );
-    const newAnnouncement = await db.get(
-      "SELECT * FROM announcements WHERE id = ?",
-      result.lastID,
-    );
-    res.status(201).json(newAnnouncement);
+    const announcement = new Announcement({
+      title,
+      content,
+      targetClass: targetClass || "all",
+      author,
+      pinned: pinned || false,
+    });
+
+    await announcement.save();
+    res.status(201).json(announcement);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -40,15 +48,12 @@ router.post("/", async (req, res) => {
 // GET announcements for TV display (optimized for TV)
 router.get("/tv", async (req, res) => {
   try {
-    // Get only active, relevant announcements
-    const announcements = await db.all(`
-      SELECT * FROM announcements 
-      WHERE (targetClass = 'all' OR targetClass = 'teachers')
-      ORDER BY pinned DESC, createdAt DESC 
-      LIMIT 20
-    `);
+    const announcements = await Announcement.find({
+      $or: [{ targetClass: "all" }, { targetClass: "teachers" }],
+    })
+      .sort({ pinned: -1, createdAt: -1 })
+      .limit(20);
 
-    // Add expires_at logic if needed
     res.json(announcements);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -59,15 +64,10 @@ router.get("/tv", async (req, res) => {
 router.post("/tv/view/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    await db.run(
-      `
-      UPDATE announcements 
-      SET tv_view_count = COALESCE(tv_view_count, 0) + 1,
-          last_tv_display = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `,
-      [id],
-    );
+    await Announcement.findByIdAndUpdate(id, {
+      $inc: { tv_view_count: 1 },
+      last_tv_display: new Date(),
+    });
     res.json({ message: "View recorded" });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -77,7 +77,7 @@ router.post("/tv/view/:id", async (req, res) => {
 // Delete announcement
 router.delete("/:id", async (req, res) => {
   try {
-    await db.run("DELETE FROM announcements WHERE id = ?", req.params.id);
+    await Announcement.findByIdAndDelete(req.params.id);
     res.json({ message: "Announcement deleted" });
   } catch (err) {
     res.status(500).json({ error: err.message });
