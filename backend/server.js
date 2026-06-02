@@ -35,6 +35,11 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
+// ====================== HEALTH CHECK (Important for Vercel) ======================
+app.get("/", (req, res) => {
+  res.json({ message: "EduTrack Backend is running ✅" });
+});
+
 // ====================== PRODUCTION: SERVE FRONTEND ======================
 if (process.env.NODE_ENV === "production") {
   const frontendPath = path.join(__dirname, "../frontend/dist");
