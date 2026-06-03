@@ -2,25 +2,21 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
-import path from "path";
-import { fileURLToPath } from "url";
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
-// Load environment variables
 dotenv.config();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ====================== CORS CONFIG ======================
+// ====================== CORS ======================
 app.use(
   cors({
     origin:
-      process.env.NODE_ENV === "production" ? false : "http://localhost:5173",
+      process.env.NODE_ENV === "production"
+        ? process.env.FRONTEND_URL
+        : "http://localhost:5173",
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -31,64 +27,79 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
-// ====================== HEALTH CHECK ======================
-app.get("/api/health", (req, res) => {
-  res.json({
-    message: "EduTrack Backend is running ✅",
-    timestamp: new Date().toISOString(),
-    database:
-      mongoose.connection.readyState === 1 ? "connected" : "disconnected",
-  });
-});
-
-// ====================== PRODUCTION: SERVE FRONTEND ======================
-if (process.env.NODE_ENV === "production") {
-  const frontendPath = path.join(__dirname, "../frontend/dist");
-  app.use(express.static(frontendPath));
-  app.get("*", (req, res) => {
-    if (!req.path.startsWith("/api")) {
-      res.sendFile(path.join(frontendPath, "index.html"));
-    }
-  });
-}
-
-// ====================== IMPORT MODELS ======================
+// ====================== MODELS ======================
 import User from "./models/User.js";
 
-// ====================== DATABASE SETUP (MongoDB) ======================
+// ====================== DB CONNECTION ======================
+// This caches the connection so we don't reconnect on every request
+let isConnected = false;
+
 const connectDB = async () => {
-  try {
-    if (!process.env.MONGODB_URI) {
-      console.error("❌ MONGODB_URI is not defined in environment variables");
-      return;
-    }
+  // If already connected, skip
+  if (isConnected) return;
 
-    await mongoose.connect(process.env.MONGODB_URI);
-    console.log("✅ MongoDB Connected Successfully");
+  // Check if MongoDB URI exists
+  if (!process.env.MONGODB_URI) {
+    throw new Error("MONGODB_URI environment variable is not set");
+  }
 
-    // Create default admin if not exists
-    const adminExists = await User.findOne({ username: "admin" });
-    if (!adminExists) {
-      const hashedPassword = await bcrypt.hash("admin123", 10);
-      const admin = new User({
-        username: "admin",
-        password: hashedPassword,
-        role: "admin",
-        fullName: "System Administrator",
-      });
-      await admin.save();
-      console.log(
-        "✅ Created default admin user (username: admin, password: admin123)",
-      );
-    } else {
-      console.log("✅ Admin user already exists");
-    }
-  } catch (error) {
-    console.error("❌ MongoDB connection error:", error.message);
+  // Connect to MongoDB
+  await mongoose.connect(process.env.MONGODB_URI, {
+    serverSelectionTimeoutMS: 5000, // Timeout after 5 seconds
+  });
+
+  isConnected = true;
+  console.log("✅ MongoDB Connected");
+
+  // Create default admin user if no admin exists
+  const adminExists = await User.findOne({ username: "admin" });
+  if (!adminExists) {
+    const hashedPassword = await bcrypt.hash("admin123", 10);
+    await User.create({
+      username: "admin",
+      password: hashedPassword,
+      role: "admin",
+      fullName: "System Administrator",
+    });
+    console.log("✅ Default admin created (admin/admin123)");
   }
 };
 
-// ====================== ROUTE IMPORTS ======================
+// ====================== DATABASE MIDDLEWARE ======================
+// This runs BEFORE every API request - CRITICAL for Vercel
+app.use(async (req, res, next) => {
+  try {
+    await connectDB(); // Ensure database is connected
+    next(); // Continue to the actual route handler
+  } catch (err) {
+    console.error("❌ DB connection failed:", err.message);
+    res.status(503).json({
+      error: "Database unavailable",
+      detail: err.message,
+    });
+  }
+});
+
+// ====================== HEALTH CHECK ======================
+app.get("/api/health", (req, res) => {
+  const states = {
+    0: "disconnected",
+    1: "connected",
+    2: "connecting",
+    3: "disconnecting",
+  };
+
+  res.json({
+    message: "EduTrack Backend is running ✅",
+    timestamp: new Date().toISOString(),
+    database: states[mongoose.connection.readyState] ?? "unknown",
+    mongoUri: process.env.MONGODB_URI ? "set ✅" : "missing ❌",
+    environment: process.env.NODE_ENV,
+    frontendUrl: process.env.FRONTEND_URL || "not set",
+  });
+});
+
+// ====================== ROUTES ======================
 import authRouter from "./routes/auth.js";
 import scoresRouter from "./routes/scores.js";
 import attendanceRouter from "./routes/attendance.js";
@@ -96,7 +107,6 @@ import examsRouter from "./routes/exams.js";
 import announcementsRouter from "./routes/announcements.js";
 import aiRouter from "./routes/ai.js";
 
-// ====================== ROUTES ======================
 app.use("/api/auth", authRouter);
 app.use("/api/scores", scoresRouter);
 app.use("/api/attendance", attendanceRouter);
@@ -104,23 +114,29 @@ app.use("/api/exams", examsRouter);
 app.use("/api/announcements", announcementsRouter);
 app.use("/api/ai", aiRouter);
 
-// Error handling middleware
+// ====================== ERROR HANDLER ======================
 app.use((err, req, res, next) => {
-  console.error("❌ Error:", err.stack);
+  console.error("❌ Unhandled error:", err.stack);
   res.status(500).json({ error: "Something went wrong!" });
 });
 
-// ====================== START SERVER ======================
+// ====================== LOCAL DEVELOPMENT ONLY ======================
+// This only runs when NOT on Vercel (local development)
 if (process.env.NODE_ENV !== "production") {
-  connectDB().then(() => {
-    app.listen(PORT, () => {
-      console.log(`\n🚀 Server running on http://localhost:${PORT}`);
-      console.log(`📁 Environment: development`);
-      console.log(`🍪 Cookie authentication: ENABLED`);
-      console.log(`\n📝 Default login: admin / admin123\n`);
+  connectDB()
+    .then(() =>
+      app.listen(PORT, () => {
+        console.log(`\n🚀 Server running on http://localhost:${PORT}`);
+        console.log(`📁 Environment: development`);
+        console.log(`📝 Default login: admin / admin123\n`);
+      }),
+    )
+    .catch((err) => {
+      console.error("Failed to start:", err.message);
+      process.exit(1);
     });
-  });
 }
 
-// ✅ CRITICAL: Export for Vercel serverless functions
+// ====================== VERCEL EXPORT ======================
+// This is what Vercel uses to run your backend
 export default app;
