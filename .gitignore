@@ -51,3 +51,4 @@ temp/
 # Coverage
 coverage/
 EOF
+.vercel
