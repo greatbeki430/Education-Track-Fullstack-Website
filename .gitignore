@@ -24,3 +24,6 @@ Thumbs.db
 uploads/
 temp/
 coverage/
+
+.vercel
+.env*
