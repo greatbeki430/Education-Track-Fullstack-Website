@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "vercel-build": "cd frontend && npm install && npm run build && cp -r dist/* ../"
+    "vercel-build": "cd frontend && npm install && npm run build"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
