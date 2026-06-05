@@ -19,7 +19,6 @@ services:
         value: 52428800
       - key: UPLOAD_DIR
         value: uploads
-      # ── Secrets: set these in Render dashboard, NOT here ──
       - key: MONGODB_URI
         sync: false
       - key: JWT_SECRET
@@ -30,8 +29,9 @@ services:
         sync: false
 
   # ─── Vite Frontend (Static Site) ───────────────────────────────────
-  - type: static
+  - type: web
     name: edutrack-frontend
+    runtime: static
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
