@@ -1,0 +1,44 @@
+services:
+  # ─── Node.js Backend (Web Service) ─────────────────────────────────
+  - type: web
+    name: edutrack-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: FRONTEND_URL
+        value: https://edutrack-frontend.onrender.com
+      - key: JWT_EXPIRES_IN
+        value: 24h
+      - key: MAX_FILE_SIZE
+        value: 52428800
+      - key: UPLOAD_DIR
+        value: uploads
+      # ── Secrets: set these in Render dashboard, NOT here ──
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+
+  # ─── Vite Frontend (Static Site) ───────────────────────────────────
+  - type: static
+    name: edutrack-frontend
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://edutrack-backend.onrender.com/api
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

@@ -31,27 +31,22 @@ app.use(cookieParser());
 import User from "./models/User.js";
 
 // ====================== DB CONNECTION ======================
-// This caches the connection so we don't reconnect on every request
 let isConnected = false;
 
 const connectDB = async () => {
-  // If already connected, skip
   if (isConnected) return;
 
-  // Check if MongoDB URI exists
   if (!process.env.MONGODB_URI) {
     throw new Error("MONGODB_URI environment variable is not set");
   }
 
-  // Connect to MongoDB
   await mongoose.connect(process.env.MONGODB_URI, {
-    serverSelectionTimeoutMS: 5000, // Timeout after 5 seconds
+    serverSelectionTimeoutMS: 5000,
   });
 
   isConnected = true;
   console.log("✅ MongoDB Connected");
 
-  // Create default admin user if no admin exists
   const adminExists = await User.findOne({ username: "admin" });
   if (!adminExists) {
     const hashedPassword = await bcrypt.hash("admin123", 10);
@@ -66,11 +61,10 @@ const connectDB = async () => {
 };
 
 // ====================== DATABASE MIDDLEWARE ======================
-// This runs BEFORE every API request - CRITICAL for Vercel
 app.use(async (req, res, next) => {
   try {
-    await connectDB(); // Ensure database is connected
-    next(); // Continue to the actual route handler
+    await connectDB();
+    next();
   } catch (err) {
     console.error("❌ DB connection failed:", err.message);
     res.status(503).json({
@@ -88,7 +82,6 @@ app.get("/api/health", (req, res) => {
     2: "connecting",
     3: "disconnecting",
   };
-
   res.json({
     message: "EduTrack Backend is running ✅",
     timestamp: new Date().toISOString(),
@@ -120,23 +113,19 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "Something went wrong!" });
 });
 
-// ====================== LOCAL DEVELOPMENT ONLY ======================
-// This only runs when NOT on Vercel (local development)
-if (process.env.NODE_ENV !== "production") {
-  connectDB()
-    .then(() =>
-      app.listen(PORT, () => {
-        console.log(`\n🚀 Server running on http://localhost:${PORT}`);
-        console.log(`📁 Environment: development`);
+// ====================== START SERVER ======================
+// Render runs a persistent process — always call app.listen()
+connectDB()
+  .then(() =>
+    app.listen(PORT, () => {
+      console.log(`\n🚀 Server running on port ${PORT}`);
+      console.log(`📁 Environment: ${process.env.NODE_ENV}`);
+      if (process.env.NODE_ENV !== "production") {
         console.log(`📝 Default login: admin / admin123\n`);
-      }),
-    )
-    .catch((err) => {
-      console.error("Failed to start:", err.message);
-      process.exit(1);
-    });
-}
-
-// ====================== VERCEL EXPORT ======================
-// This is what Vercel uses to run your backend
-export default app;
+      }
+    }),
+  )
+  .catch((err) => {
+    console.error("Failed to start:", err.message);
+    process.exit(1);
+  });
