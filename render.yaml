@@ -3,6 +3,7 @@ services:
   - type: web
     name: edutrack-backend
     runtime: node
+    plan: free
     rootDir: backend
     buildCommand: npm install
     startCommand: node server.js
@@ -32,6 +33,7 @@ services:
   - type: web
     name: edutrack-frontend
     runtime: static
+    plan: free
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
